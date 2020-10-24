@@ -90,7 +90,6 @@ class MainWindow(QMainWindow):
         self.searchPanel = SearchPanel()
         self.searchPanel.hide()
         self.ui.verticalLayout_2.addWidget(self.searchPanel)
-        self.searchPanel.searched.connect(self.search_on_page)
 
         ################################################################################
         # QMenu Контекстное меню для articleTitleView
@@ -99,7 +98,6 @@ class MainWindow(QMainWindow):
         self.articleViewContextMenu.addAction('Удалить статью', self.delete_article)
         self.articleViewContextMenu.addAction('Экспортировать статью в HTML', self.export_article_to_html)
         self.ui.articleView.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.ui.articleView.customContextMenuRequested['QPoint'].connect(self.articleViewContextMenuRequested)
 
         ################################################################################
         # Контекстное меню для articleTagView
@@ -107,7 +105,6 @@ class MainWindow(QMainWindow):
         self.tagViewContextMenu = QMenu()
         self.tagViewContextMenu.addAction('Удалить тег', self.delete_tag_from_tagView)
         self.ui.tagsView.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.ui.tagsView.customContextMenuRequested.connect(self.tagViewContextMenuRequested)
 
         ################################################################################
         # Меню сортировки статей
@@ -122,18 +119,6 @@ class MainWindow(QMainWindow):
         self.sortGroup.addAction(self.ui.actionSortTitleAsc)
         self.sortGroup.setExclusive(True)
         self.ui.sortArticlesSubmenu.addActions(self.sortGroup.actions())
-        self.ui.actionSortTitleAsc.triggered.connect(
-            lambda _, col='title', order='asc': self.articleTitleModel.changeSortOrder(col, order)
-        )
-        self.ui.actionSortTitleDesc.triggered.connect(
-            lambda _, col='title', order='desc': self.articleTitleModel.changeSortOrder(col, order)
-        )
-        self.ui.actionSortDateAsc.triggered.connect(
-            lambda _, col='time_saved', order='asc': self.articleTitleModel.changeSortOrder(col, order)
-        )
-        self.ui.actionSortDateDesc.triggered.connect(
-            lambda _, col='time_saved', order='desc': self.articleTitleModel.changeSortOrder(col, order)
-        )
 
         ################################################################################
         # иконки для меню
@@ -154,6 +139,21 @@ class MainWindow(QMainWindow):
         self.ui.actionNewDB.triggered.connect(self.create_new_db)
         self.ui.actionOpenDbase.triggered.connect(self.open_other_db)
         self.htmlImportedSignal.connect(self.load_data_from_db)
+        self.searchPanel.searched.connect(self.search_on_page)
+        self.ui.tagsView.customContextMenuRequested.connect(self.tagViewContextMenuRequested)
+        self.ui.articleView.customContextMenuRequested['QPoint'].connect(self.articleViewContextMenuRequested)
+        self.ui.actionSortTitleAsc.triggered.connect(
+            lambda _, col='title', order='asc': self.articleTitleModel.changeSortOrder(col, order)
+        )
+        self.ui.actionSortTitleDesc.triggered.connect(
+            lambda _, col='title', order='desc': self.articleTitleModel.changeSortOrder(col, order)
+        )
+        self.ui.actionSortDateAsc.triggered.connect(
+            lambda _, col='time_saved', order='asc': self.articleTitleModel.changeSortOrder(col, order)
+        )
+        self.ui.actionSortDateDesc.triggered.connect(
+            lambda _, col='time_saved', order='desc': self.articleTitleModel.changeSortOrder(col, order)
+        )
         # выбор статьи для просмотра
         self.ui.articleView.selectionModel().selectionChanged.connect(self.open_webpage)
         # выбор в комбобоксе
