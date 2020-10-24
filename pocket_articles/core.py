@@ -1,0 +1,643 @@
+# todo:
+#   Сделать экспорт тегов, тегов статей
+#   Сделать импорт тегов, статей тегов
+#   Пересмотреть вызовы логгера
+#   Запоминать последнюю открытую статью.
+#   Проверить все методы с записью в базу на rollback.
+
+import os
+import re
+import sqlite3 as sql
+import sys
+import tempfile
+import traceback
+from lxml import html
+from lxml.html.clean import Cleaner
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWebEngineWidgets import QWebEnginePage, QWebEngineSettings
+from PyQt5.QtWidgets import *
+
+from . import applogger
+from . import resources
+from .changedb import (add_tag, add_article, connect, export_articles, SqliteError, add_page_tag)
+from .getpagedata import get_data_from_page
+from .getpocketdata import get_pocket_data
+from .mainwindow import Ui_MainWindow
+from .qarticletag import ArticleTag, DeleteArticleTagEvent
+from .qdelegate import Delegate
+from .qsearchpanel import SearchPanel
+from .qtablemodel import TableModel
+from .qtagcombobox import TagsComboBox
+from .qtproxystyle import ProxyStyle
+from .qtreeproxymodel import TreeViewProxyModel
+from .qmainwindowclass import MainWindow
+
+logger = applogger.get_logger(__name__)
+
+TagId, Count = Qt.UserRole, Qt.UserRole + 1
+
+
+def log_uncaught_exceptions(ex_cls, ex, tb):
+    text = 'Uncaught exception\n{}: {}:\n'.format(ex_cls.__name__, ex)
+    text += ''.join(traceback.format_tb(tb))
+    logger.error(text)
+    QMessageBox.critical(None, 'Ошибка выполнения', "Возникла ошибка.\nСмотри лог программы.")
+    sys.exit()
+
+
+sys.excepthook = log_uncaught_exceptions
+
+cleaner = Cleaner(style=True)
+
+
+def get_page_text_content(content):
+    """Получает текстовое содержимое html-страницы.
+
+    Parameters
+    ----------
+    content: str
+        html-code страницы
+    """
+    doc = html.document_fromstring(content)
+    doc = cleaner.clean_html(doc)
+    text = ''.join(doc.xpath('//text()'))
+    text = re.sub('\n', ' ', text)
+    text = re.sub(' {2,}', ' ', text)
+    return text
+
+
+class Window(MainWindow):
+
+    def __init__(self, parent=None):
+        super(Window, self).__init__(parent)
+        self.load_data_from_db()
+
+    @pyqtSlot()
+    def update_articleTagModel(self, tag=None, tagId=None):
+        """Обновление данных в модели отображения тегов статей"""
+        all_articles_count = self.con.execute('select count(id) from webpages;').fetchone()[0]
+        all_articles_item_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), TagId, 'all_articles', 1,
+                                                           Qt.MatchExactly)[0]
+        if all_articles_item_idx.data(Count) != all_articles_count:
+            self.articleTagModel.itemFromIndex(all_articles_item_idx).setData(all_articles_count, Count)
+
+        notags_count = self.con.execute(self.notags_req).fetchone()
+        notags_count = 0 if not notags_count else notags_count[0]
+        notags_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), TagId, 'notags', 1,
+                                                Qt.MatchExactly)[0]
+        if notags_idx.data(Count) != notags_count:
+            self.articleTagModel.itemFromIndex(notags_idx).setData(notags_count, Count)
+
+        favorites_count = self.con.execute('select count(id_page) from webpagetags '
+                                           'where id_tag='
+                                           '(select id from tags where tag="Избранное");').fetchone()[0]
+        favorites_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), Qt.DisplayRole,
+                                                   'Избранное', 1, Qt.MatchExactly)[0]
+        if favorites_idx.data(Count) != favorites_count:
+            self.articleTagModel.setData(favorites_idx, favorites_count, Count)
+
+        if (not tag and not tagId) or tag == 'Избранное':
+            return
+        if tagId:
+            tag_id = tagId
+        else:
+            tag_id = self.con.execute('select id from tags where tag = ?', [tag]).fetchone()[0]
+        article_tagged_count = self.con.execute('select count(id_tag) from webpagetags where id_tag = ?',
+                                                [tag_id]).fetchone()[0]
+        all_tags_item_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), TagId, 'tags', 1,
+                                                       Qt.MatchExactly)[0]
+        tag_item_idx = self.articleTagModel.match(all_tags_item_idx.child(0, 0), TagId, tag_id, 1,
+                                                  Qt.MatchExactly | Qt.MatchRecursive)
+        if not tag_item_idx:
+            item = QStandardItem(tag)
+            item.setData(tag_id, TagId)
+            item.setData(article_tagged_count, Count)
+            self.articleTagModel.itemFromIndex(all_tags_item_idx).appendRow([item])
+        elif tag_item_idx[0].data(Count) != article_tagged_count:
+            self.articleTagModel.itemFromIndex(tag_item_idx[0]).setData(article_tagged_count, Count)
+
+    @pyqtSlot()
+    def delete_tag_from_tagView(self):
+        res = QMessageBox.question(self, 'Подтвердить', 'Удалить тег?')
+        if res == QMessageBox.No:
+            return
+        index = self.tagViewSelectionModel.currentIndex()
+        if not index.isValid():
+            return
+        try:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            self.con.execute('delete from tags where id = ?', [index.data(TagId)])
+            self.con.commit()
+            logger.debug(f'Удален тег {index.data(Qt.DisplayRole)}')
+            modelIndex = self.tagProxyModel.mapToSource(index)
+            self.articleTagModel.removeRow(modelIndex.row(), modelIndex.parent())
+            self.create_cbx_model()
+        except sql.DatabaseError:
+            logger.exception('Ошибка удаления тега')
+            return
+        else:
+            self.update_articleTagModel()
+        finally:
+            QApplication.restoreOverrideCursor()
+
+    @pyqtSlot()
+    def highlight_searched_text(self):
+        """Подсветка текста, по которому производили поиск по базе"""
+        if self.ui.dbSearch.text() == '':
+            return
+        text = self.ui.dbSearch.text().replace('"', '').replace('*', '')
+        self.ui.webView.findText(text)
+
+    @pyqtSlot(str, QWebEnginePage.FindFlag)
+    def search_on_page(self, text, flags):
+        color = self.searchPanel.palette().color(QPalette.Base).getRgb()
+
+        def callback(result):
+            palette = QPalette()
+            if not result and text != '':
+                self.searchPanel.search_le.setStyleSheet('background: rgba(255, 0, 0, 0.5);')
+            else:
+                self.searchPanel.search_le.setStyleSheet(f'background: rgba({color});')
+
+        self.ui.webView.findText(text, flags, callback)
+
+    @pyqtSlot()
+    def open_other_db(self):
+        """Открывает другую базу данных"""
+        homedir = QStandardPaths.writableLocation(QStandardPaths.HomeLocation)
+        db_path, _ = QFileDialog.getOpenFileName(self, 'Открыть базу данных', homedir,
+                                                 "SQLite (*.sqlite *.sqlite3 *.db);;All (*)")
+        self.con.close()
+        self.con = connect(db_path)
+        self.articleTitleModel.setCursor(self.con.cursor())
+        self.htmlImportedSignal.emit()
+
+    @pyqtSlot()
+    def export_article_to_html(self):
+        """Экспорт выделенной статьи в HTML"""
+        article = self.ui.articleView.selectionModel().selection().indexes()[-1]
+        folder = self.get_dir_name()
+        if not folder:
+            return
+        try:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            content = self.con.execute(
+                """select content from webpages where id=?""", [article.data(Qt.UserRole)]
+            ).fetchone()[-1]
+            fname = re.sub('[/?<>*"|]', '', article.data(Qt.DisplayRole)[:122])
+            fname = re.sub('( ){2,}', ' ', fname)
+            path = os.path.join(folder, fname)
+            with open(path + '.html', 'w') as f:
+                f.write(content)
+        except Exception:
+            logger.exception('Error export article')
+            QMessageBox.critical(self, 'Ошибка импорта', f'Ошибка импорта статьи', QMessageBox.Ok)
+        else:
+            logger.info(f'Article imported\n{article.data(Qt.DisplayRole)}\n')
+            QMessageBox.information(self, 'Импортирование завершено', 'Импортирование статьи завершено успешно',
+                                    QMessageBox.Ok)
+        finally:
+            QApplication.restoreOverrideCursor()
+
+    @pyqtSlot()
+    def delete_article_tag(self, tag: str):
+        """Удаляет тег статьи в базе"""
+        select_indexes = self.ui.articleView.selectionModel().selection().indexes()
+        if not select_indexes:
+            return
+        cur_index = select_indexes[1]
+        sql_request = """delete from webpagetags where id_page=? and id_tag=(select id from tags where tag = ?)"""
+        try:
+            self.con.execute(sql_request, [cur_index.data(Qt.UserRole), tag])
+            self.con.commit()
+            self.update_articleTagModel(tag)
+        except sql.Error:
+            logger.exception('Exception in delete_article_tag')
+            self.con.rollback()
+            QMessageBox.warning(self, 'Ошибка', "Ошибка удаления тега статьи")
+
+    @pyqtSlot(int)
+    def change_sort_order(self, column):
+        self.articleTitleModel.changeSortOrder(
+            column, self.ui.articleView.horizontalHeader().sortIndicatorOrder())
+
+    def customEvent(self, event):
+        if event.type() == DeleteArticleTagEvent.idType:
+            self.delete_article_tag(event.tag)
+
+    @pyqtSlot(QPoint)
+    def articleViewContextMenuRequested(self, pos: QPoint):
+        """Запуск контекстного меню"""
+        self.articleViewContextMenu.exec_(self.ui.articleView.mapToGlobal(pos))
+
+    @pyqtSlot(QPoint)
+    def tagViewContextMenuRequested(self, pos: QPoint):
+        index = self.ui.tagsView.indexAt(pos)
+        if not (Qt.ItemIsEditable & index.flags()):
+            return
+        self.tagViewContextMenu.exec_(self.ui.tagsView.mapToGlobal(pos))
+
+    @pyqtSlot()
+    def delete_article(self):
+        """Удаляет статью из базы
+
+        После успешного удаления статьи из базы в ArticleTag, находящихся в articleTagsHBox вызывается метод
+        action_triggered, который вызывает событие DeleteArticleTagEvent. При обработке которого, вызывается метод
+        delete_article_tag, из которого уже вызывается обновление articleTagModel.
+
+        Notes
+        -----
+        Когда удаляем строку текущий индекс меняется!!! Поэтому ModelIndex будет указывать на совершенно другой объект!
+        Данные из индекса нужно взять сразу, или сначала сделать удаление из базы, а потом из модели.
+        """
+        status = QMessageBox.question(self, 'Подтвердить', 'Удалить статью?',
+                                      QMessageBox.Ok | QMessageBox.Cancel, QMessageBox.Cancel)
+        if status == QMessageBox.Cancel:
+            return
+        indx = self.ui.articleView.currentIndex()
+        if not indx.isValid():
+            return
+        id_page = indx.data(Qt.UserRole)
+        try:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            tag_list = self.con.execute('select id_tag from webpagetags where id_page=?', [id_page]).fetchall()
+            self.con.executescript(
+                """begin transaction;
+                delete from webpages where id = {0};
+                delete from webcontents where id_page match {0};""".format(id_page))
+            self.con.commit()
+            if tag_list:
+                for tag_id in tag_list:
+                    self.update_articleTagModel(tagId=tag_id[0])
+            else:
+                self.update_articleTagModel()
+            logger.info(f'Удалена статья "{indx.data(Qt.DisplayRole)}')
+            self.articleTitleModel.removeRow(indx.row())
+            QMessageBox.information(self, 'Завершено', 'Статья удалена', QMessageBox.Ok)
+        except sql.Error:
+            self.con.rollback()
+            logger.exception('Exception in delete_article')
+            QMessageBox.critical(self, 'Ошибка!', 'Ошибка удаления статьи из базы')
+        finally:
+            QApplication.restoreOverrideCursor()
+
+    @pyqtSlot()
+    def db_search(self):
+        txt = self.ui.dbSearch.text()
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        if not txt:
+            self.articleTitleModel.changeSqlQuery()
+        else:
+            query = ("""
+            select time_saved, webpages.title, id from webpages
+            join webcontents on id=id_page where webcontents.content match '{}' """.format(txt) +
+                     """order by rank limit ? offset ?;""")
+            self.articleTitleModel.changeSqlQuery(query)
+        QApplication.restoreOverrideCursor()
+
+    @pyqtSlot(QItemSelection)
+    def tag_selected(self, selection: QItemSelection):
+        self.ui.dbSearch.clear()
+        self.ui.filterArticleLineEdit.clear()
+        index = selection.indexes()[0]
+        if index.data(Qt.UserRole) == 'all_articles':
+            self.articleTitleModel.changeSqlQuery()
+            return
+        if index.data(Qt.UserRole) == 'notags':
+            query = ("""select time_saved, title, id
+                    from webpages
+                    where id not in
+                    (select id_page from webpagetags group by id_page)""" +
+                     """order by lower({}) {} limit ? offset ?;""")
+        else:
+            query = ("""select time_saved, title, webpages.id
+                    from webpages inner join webpagetags w on webpages.id = w.id_page
+                    where w.id_tag = {} """.format(index.data(Qt.UserRole)) +
+                     """order by lower({}) {} limit ? offset ?;""")
+        self.articleTitleModel.changeSqlQuery(query)
+
+    @pyqtSlot()
+    def set_filter_article_title(self):
+        """Устанавливает фильтр к статьям"""
+        if not self.ui.filterArticleLineEdit.text():
+            self.articleTitleModel.changeSqlQuery()
+            return
+        sql_request = ("select time_saved, webpages.title, id from webpages join "
+                       "webcontents on id=id_page "
+                       "where webcontents.title match '{}'".format(self.ui.filterArticleLineEdit.text()) +
+                       "order by rank limit ? offset ?")
+        self.articleTitleModel.changeSqlQuery(sql_request)
+
+    @pyqtSlot(int)
+    def add_new_tag(self, index):
+        """Добавляет тег из комбобокса к статье
+
+        Если статья уже имеет тег, который задается, то при добавлении в базу присходит исключение - так исключается
+        дублирование."""
+        if not self.ui.articleView.currentIndex().isValid():
+            return
+        insert_article_tag = """insert into webpagetags (id_page, id_tag) VALUES (?, ?)"""
+        cur = self.con.cursor()
+        cur.execute('begin transaction;')
+        try:
+            if not self.tagCBox.itemData(index, Qt.UserRole):
+                id_tag = add_tag(self.tagCBox.itemText(index), cur)
+            else:
+                id_tag = self.tagCBox.itemData(index, Qt.UserRole)
+            cur.execute(insert_article_tag, [self.ui.articleView.currentIndex().data(Qt.UserRole), id_tag])
+            self.tagCBox.setItemData(index, id_tag, Qt.UserRole)
+        except sql.DatabaseError:
+            self.con.rollback()
+            logger.warning('Ошибка установки тега {}\n{}'.format(self.tagCBox.itemText(index), traceback.format_exc()))
+            return
+        finally:
+            self.tagCBox.setCurrentIndex(-1)
+            cur.close()
+        self.con.commit()
+        self.articleTagsHBox.insertWidget(self.articleTagsHBox.count() - 1, ArticleTag(self.tagCBox.itemText(index)))
+        self.update_articleTagModel(self.tagCBox.itemText(index))
+
+    @pyqtSlot()
+    def create_cbx_model(self):
+        """Модель для комбобокса"""
+        self.tagCBoxModel.clear()
+        cur = self.con.cursor()
+        for tag in cur.execute("""select id, tag from tags order by lower(tag);"""):
+            item = QStandardItem(tag[1])
+            item.setData(tag[0], Qt.UserRole)
+            self.tagCBoxModel.appendRow(item)
+        self.tagCBox.setCurrentIndex(-1)
+
+    @pyqtSlot()
+    def load_data_from_db(self):
+        """Зазрузка заголовков и тегов статей"""
+        try:
+            self.create_articleTagModel()
+            self.create_cbx_model()
+        except Exception:
+            logger.exception('Exception in load_data_from_db')
+
+    @pyqtSlot()
+    def create_articleTagModel(self):
+        """Создание списка тегов статей"""
+
+        self.articleTagModel.clear()
+
+        line = QStandardItem()
+        line.setData('line', Qt.UserRole)
+        line.setFlags(Qt.NoItemFlags)
+
+        favorites = QStandardItem('Избранное')
+        favorites_id = self.con.execute('select id from tags where tag="Избранное"')
+        if not favorites_id:
+            favorites_id = self.con.execute('insert into tags (tag) values ("Избранное")').lastrowid
+            self.con.commit()
+        else:
+            favorites_id = favorites_id.fetchone()[0]
+        favorites.setData(favorites_id, TagId)
+        favorites.setData(0, Count)
+        favorites.setEditable(False)
+
+        tags = QStandardItem('Теги')
+        tags.setFlags(Qt.NoItemFlags)
+        tags.setData('tags', TagId)
+        for tag, _id in self.con.execute('select tag, id from tags;'):
+            if _id == favorites_id:
+                continue
+            item = QStandardItem('{0}'.format(tag))
+            item.setData(0, Count)
+            item.setData(_id, TagId)
+            tags.appendRow(item)
+
+        notags_count = self.con.execute(self.notags_req).fetchone()
+        notags_count = 0 if not notags_count else notags_count[0]
+        notags = QStandardItem(f'Без тегов')
+        notags.setData('notags', TagId)
+        notags.setData(notags_count, Count)
+        notags.setEditable(False)
+
+        article_count = self.con.execute(
+            """
+            select count(id) from webpages;
+            """).fetchone()
+        article_count = 0 if not article_count else article_count[0]
+        all_articles = QStandardItem('Все статьи')
+        all_articles.setData('all_articles', TagId)
+        all_articles.setData(article_count, Count)
+        all_articles.setEditable(False)
+
+        self.articleTagModel.appendRow(all_articles)
+        self.articleTagModel.appendRow(line)
+        self.articleTagModel.appendRow(notags)
+        self.articleTagModel.appendRow(QStandardItem(line))
+        self.articleTagModel.appendRow(favorites)
+        self.articleTagModel.appendRow(QStandardItem(line))
+        self.articleTagModel.appendRow(tags)
+        for count, _id in self.con.execute("""
+                select count(tags.id), tags.id
+                from tags join webpageTags on tags.id = webpageTags.id_tag
+                group by tags.id;"""):
+            tag_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), TagId, _id, 1,
+                                                 Qt.MatchExactly | Qt.MatchRecursive)[0]
+            if tag_idx.data(Count) != count:
+                self.articleTagModel.setData(tag_idx, count, Count)
+        self.ui.tagsView.setExpanded(self.tagProxyModel.mapFromSource(tags.index()), True)
+
+    @pyqtSlot()
+    def export_db_to_html(self):
+        """Экспорт базы данных в HTML"""
+        folder = self.get_dir_name()
+        try:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            count = export_articles(folder, self.con.cursor())
+        except SqliteError:
+            logger.exception('Exception in export_db_to_html')
+            QMessageBox.critical(self, 'Ошибка экспорта', 'Ошибка экспорта\nСмотри лог программы')
+        else:
+            QMessageBox.information(self, 'Экспортирование завершено', 'Экспортировано {} статьи'.format(count),
+                                    QMessageBox.Ok)
+        finally:
+            QApplication.restoreOverrideCursor()
+
+    @pyqtSlot()
+    def create_new_db(self):
+        """Создание новой базы данных
+
+            При создании базы из сервиса Pocket также будет создана таблица тегов.
+        """
+        dbase_path, _ = QFileDialog.getSaveFileName(
+            self, 'Файл базы данных', QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
+            "SQLite (*.sqlite *.sql *.sqlite3, *.db);;All files (*)"
+        )
+        if not dbase_path:
+            return
+        self.con.close()
+        if os.path.exists(dbase_path):
+            os.unlink(dbase_path)
+        self.con = connect(dbase_path)
+
+        sender = self.sender()
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            self.import_html()
+            if sender is self.ui.actionNewDBPocket:
+                self.create_tag_tables()
+            self.ui.statusbar.showMessage('База данных создана')
+            logger.info(f'Новая база данных создана {dbase_path}')
+            QMessageBox.information(self, 'Готово', 'База данных создана')
+        except Exception:
+            logger.exception('Exception in create new dbase')
+            QMessageBox.critical(self, 'Ошибка', 'Ошибка создания базы данных')
+        finally:
+            self.htmlImportedSignal.emit()
+            self.articleTitleModel.setCursor(self.con.cursor())
+            QApplication.restoreOverrideCursor()
+
+    @pyqtSlot()
+    def import_html(self):
+        """Импортирование сохраненных страниц
+
+        Импортирует сохраненные HTML страницы из заданной папки"""
+        html_dir = self.get_dir_name()  # диалог с выбором папки
+        if not html_dir:
+            return
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            count = self.write_data_webpages_table(html_dir)
+            QMessageBox.information(self, "Имрортирование завершено", f'{count} статей импортировано', QMessageBox.Ok)
+            self.ui.statusbar.showMessage(f'{count} статей импортировано в базу данных')
+            self.htmlImportedSignal.emit()
+        except Exception:
+            logger.exception('Exception in import_html')
+            QMessageBox.critical(self, 'Ошибка', f'Ошибка импорта страниц')
+        finally:
+            self.articleTitleModel.resetModel()
+            QApplication.restoreOverrideCursor()
+
+    @pyqtSlot()
+    def get_dir_name(self):
+        try:
+            return QFileDialog.getExistingDirectory(
+                caption='Выбрать папку',
+                directory=QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
+                options=QFileDialog.ShowDirsOnly
+            )
+        except Exception:
+            logger.exception('Exception in get_dir_name')
+            return
+
+    @pyqtSlot()
+    def create_tag_tables(self):
+        """Создание таблиц tag и webpageTags в базе данных"""
+        pocket_data = get_pocket_data()
+        articles_lst = pocket_data['list']
+        cur = self.con.cursor()
+        try:
+            for article_data in articles_lst.values():
+                url = article_data.get('given_url')
+                tags = article_data.get('tags')
+                if not tags:
+                    continue
+                for tag in tags:
+                    tag_id = add_tag(tag, cur)
+                    add_page_tag(url, tag_id, cur)
+        except Exception:
+            logger.exception('Ошибка создания таблицы тегов')
+            QMessageBox.critical(self, 'Ошибка', 'Ошибка создания таблицы тегов')
+        finally:
+            cur.execute('commit')
+            cur.close()
+
+    @pyqtSlot()
+    def write_data_webpages_table(self, html_dir):
+        """Запись веб-страниц в базу данных"""
+        count = 0
+        self.con.execute("""begin transaction;""")
+        try:
+            for file in os.listdir(html_dir):
+                if file.endswith('html'):
+                    filename = os.path.join(html_dir, file)
+                    title, url, saved_date = get_data_from_page(filename)
+                    with open(filename) as f:
+                        htmlContent = f.read()
+                    textContent = get_page_text_content(htmlContent)
+                    try:
+                        add_article(title=title, time_saved=saved_date, url=url,
+                                    conn=self.con, htmlContent=htmlContent,
+                                    textContent=textContent)
+                        count += 1
+                    except sql.IntegrityError:
+                        logger.warning("Can't add article\n{}\n{}".format(title, traceback.format_exc()))
+        finally:
+            self.con.commit()
+        return count
+
+    @pyqtSlot(QItemSelection)
+    def open_webpage(self, selection: QItemSelection):
+        """Загрузка статьи"""
+        if selection.isEmpty():
+            return
+        self.ui.webView.findText('')  # сбрасываем поиск текста на странице
+        index = selection.indexes()[-1]
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            html = self.con.execute(
+                """select content from webpages where id=?""", (index.data(Qt.UserRole),)).fetchone()[0]
+            tags = self.con.execute(
+                """select tag from tags where id in
+                (select id_tag from webpagetags where id_page = ?);""", (index.data(Qt.UserRole),)).fetchall()
+        except (sql.Error, Exception):  # разделить исключения
+            logger.exception('Exception in open_webpage')
+            QMessageBox.critical(self, 'Ошибка открытия статьи', 'Ошибка открытия страницы')
+            self.ui.articleView.selectionModel().clearSelection()
+            QApplication.restoreOverrideCursor()
+            return
+        # удаляем теги из горизонтального лейаута
+        for i in range(self.articleTagsHBox.count() - 1, -1, -1):
+            item = self.articleTagsHBox.itemAt(i)
+            if isinstance(item.widget(), ArticleTag):
+                self.articleTagsHBox.takeAt(i).widget().deleteLater()
+        if tags:
+            for tag in tags:
+                self.articleTagsHBox.insertWidget(
+                    self.articleTagsHBox.count() - 1, ArticleTag(tag[0]))
+        if self._tmphtmlfile:
+            try:
+                os.unlink(self._tmphtmlfile)
+            except OSError:
+                pass
+        _, self._tmphtmlfile = tempfile.mkstemp(suffix='.html', text=False)
+        with open(self._tmphtmlfile, 'w') as fh:
+            fh.write(html)
+        self.ui.webView.load(QUrl.fromLocalFile(self._tmphtmlfile))
+        self.ui.pageTitleLabel.setText(index.data())
+        QApplication.restoreOverrideCursor()
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        if self.con:
+            self.con.close()
+        try:
+            if self._tmphtmlfile:
+                os.unlink(self._tmphtmlfile)
+        except OSError:
+            logger.exception('Exception in closeEvent unlink self._tmphtmlfile')
+        event.accept()
+
+
+def main():
+    sys.argv.append('--disable-web-security')
+    app = QApplication(sys.argv)
+    app.setStyle(ProxyStyle())
+
+    from qtl18n_ru import localization
+    localization.setupRussianLang(app)
+
+    fh = QFile(':/css/stylesheet.qss')
+    if fh.open(QIODevice.ReadOnly | QIODevice.Text):
+        app.setStyleSheet(QTextStream(fh).readAll())
+
+    w = Window()
+    w.show()
+    sys.exit(app.exec_())

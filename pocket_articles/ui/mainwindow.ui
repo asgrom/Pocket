@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Window</class>
+ <widget class="QMainWindow" name="Window">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>958</width>
+    <height>649</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Pocket Articles</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../icons/icons8-pocket_128px.png</normaloff>../icons/icons8-pocket_128px.png</iconset>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout_2">
+    <item row="0" column="0">
+     <widget class="QSplitter" name="splitter_2">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="QFrame" name="tagsFrame">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>2</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <property name="leftMargin">
+         <number>5</number>
+        </property>
+        <property name="topMargin">
+         <number>5</number>
+        </property>
+        <property name="rightMargin">
+         <number>5</number>
+        </property>
+        <property name="bottomMargin">
+         <number>5</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Теги сохраненных статей</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTreeView" name="tagsView">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+            <horstretch>1</horstretch>
+            <verstretch>5</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>50</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <property name="lineWidth">
+           <number>0</number>
+          </property>
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAsNeeded</enum>
+          </property>
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="animated">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QSplitter" name="splitter">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+         <horstretch>9</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <widget class="QFrame" name="articleListFrame">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>1</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QLineEdit" name="filterArticleLineEdit">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Поиск по части слова: &lt;span style=&quot; font-weight:600;&quot;&gt;программ*&lt;/span&gt; (программа, программирование...).&lt;/p&gt;&lt;p&gt;Словосочетание с дефисом: &lt;span style=&quot; font-weight:600;&quot;&gt;&amp;quot;медиа-сервер&amp;quot;&lt;/span&gt; (заключить в кавычки).&lt;/p&gt;&lt;p&gt;Найти словосочетание: &lt;span style=&quot; font-weight:600;&quot;&gt;&amp;quot;вкусный обед&amp;quot;&lt;/span&gt; (заключить в кавычки).&lt;/p&gt;&lt;p&gt;Словосочетание: &lt;span style=&quot; font-weight:600;&quot;&gt;вкусный обед&lt;/span&gt; (найдет в любом порядке).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="frame">
+              <bool>true</bool>
+             </property>
+             <property name="placeholderText">
+              <string>Фильтр</string>
+             </property>
+             <property name="clearButtonEnabled">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="dbSearch">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Поиск по части слова: &lt;span style=&quot; font-weight:600;&quot;&gt;программ*&lt;/span&gt; (программа, программирование...).&lt;/p&gt;&lt;p&gt;Словосочетание с дефисом: &lt;span style=&quot; font-weight:600;&quot;&gt;&amp;quot;медиа-сервер&amp;quot;&lt;/span&gt; (заключить в кавычки).&lt;/p&gt;&lt;p&gt;Найти словосочетание: &lt;span style=&quot; font-weight:600;&quot;&gt;&amp;quot;вкусный обед&amp;quot;&lt;/span&gt; (заключить в кавычки).&lt;/p&gt;&lt;p&gt;Словосочетание: &lt;span style=&quot; font-weight:600;&quot;&gt;вкусный обед&lt;/span&gt; (найдет в любом порядке).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="placeholderText">
+              <string>Поиск по базе данных</string>
+             </property>
+             <property name="clearButtonEnabled">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QTableView" name="articleView">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>1</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="editTriggers">
+            <set>QAbstractItemView::NoEditTriggers</set>
+           </property>
+           <property name="alternatingRowColors">
+            <bool>true</bool>
+           </property>
+           <property name="selectionMode">
+            <enum>QAbstractItemView::SingleSelection</enum>
+           </property>
+           <property name="selectionBehavior">
+            <enum>QAbstractItemView::SelectRows</enum>
+           </property>
+           <property name="sortingEnabled">
+            <bool>true</bool>
+           </property>
+           <property name="wordWrap">
+            <bool>false</bool>
+           </property>
+           <property name="cornerButtonEnabled">
+            <bool>false</bool>
+           </property>
+           <attribute name="horizontalHeaderMinimumSectionSize">
+            <number>150</number>
+           </attribute>
+           <attribute name="horizontalHeaderDefaultSectionSize">
+            <number>150</number>
+           </attribute>
+           <attribute name="horizontalHeaderStretchLastSection">
+            <bool>true</bool>
+           </attribute>
+           <attribute name="verticalHeaderVisible">
+            <bool>false</bool>
+           </attribute>
+           <attribute name="verticalHeaderMinimumSectionSize">
+            <number>0</number>
+           </attribute>
+           <attribute name="verticalHeaderDefaultSectionSize">
+            <number>19</number>
+           </attribute>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QFrame" name="articleViewFrame">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>8</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Raised</enum>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <property name="leftMargin">
+          <number>5</number>
+         </property>
+         <property name="topMargin">
+          <number>5</number>
+         </property>
+         <property name="rightMargin">
+          <number>5</number>
+         </property>
+         <property name="bottomMargin">
+          <number>5</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="pageTitleLabel">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>5</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
+           </property>
+           <property name="text">
+            <string>Просмотр статьи</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QWebEngineView" name="webView" native="true">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>8</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>50</width>
+             <height>50</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>958</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>Файл</string>
+    </property>
+    <addaction name="actionNewDB"/>
+    <addaction name="actionNewDBPocket"/>
+    <addaction name="actionOpenDbase"/>
+    <addaction name="separator"/>
+    <addaction name="actionImportHtml"/>
+    <addaction name="exportDataBaseAction"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="viewMenu">
+    <property name="title">
+     <string>Вид</string>
+    </property>
+    <widget class="QMenu" name="sortArticlesSubmenu">
+     <property name="tearOffEnabled">
+      <bool>false</bool>
+     </property>
+     <property name="title">
+      <string>Сортировать статьи по</string>
+     </property>
+     <addaction name="actionSortDateDesc"/>
+     <addaction name="actionSortDateAsc"/>
+     <addaction name="actionSortTitleDesc"/>
+     <addaction name="actionSortTitleAsc"/>
+    </widget>
+    <addaction name="sortArticlesSubmenu"/>
+   </widget>
+   <widget class="QMenu" name="serviceMenu">
+    <property name="title">
+     <string>Сервис</string>
+    </property>
+    <addaction name="actionAppAuth"/>
+    <addaction name="separator"/>
+    <addaction name="actionExportTagsTable"/>
+    <addaction name="actionExportArticleTags"/>
+    <addaction name="separator"/>
+    <addaction name="actionImportTags"/>
+    <addaction name="actionImportArticleTags"/>
+   </widget>
+   <addaction name="menu"/>
+   <addaction name="viewMenu"/>
+   <addaction name="serviceMenu"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionImportHtml">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Импорт html из папки</string>
+   </property>
+   <property name="statusTip">
+    <string>Импорт сохраненных страниц</string>
+   </property>
+   <property name="whatsThis">
+    <string/>
+   </property>
+  </action>
+  <action name="exportDataBaseAction">
+   <property name="text">
+    <string>Экспорт статей в html</string>
+   </property>
+   <property name="statusTip">
+    <string>Экспортировать базу данных в HTML</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Выход</string>
+   </property>
+   <property name="statusTip">
+    <string>Выход</string>
+   </property>
+  </action>
+  <action name="actionNewDB">
+   <property name="text">
+    <string>Новая БД</string>
+   </property>
+   <property name="toolTip">
+    <string>Новая БД</string>
+   </property>
+   <property name="statusTip">
+    <string>Создать новую базу данных</string>
+   </property>
+  </action>
+  <action name="actionNewDBPocket">
+   <property name="text">
+    <string>Новая БД Pocket</string>
+   </property>
+   <property name="statusTip">
+    <string>Создать новую базу данных используя Pocket</string>
+   </property>
+  </action>
+  <action name="actionAppAuth">
+   <property name="text">
+    <string>Аутентификация в Pocket</string>
+   </property>
+   <property name="statusTip">
+    <string>Аутентификация приложения в Pocket</string>
+   </property>
+  </action>
+  <action name="actionOpenDbase">
+   <property name="text">
+    <string>Открыть другую базу</string>
+   </property>
+  </action>
+  <action name="actionSortDateDesc">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Дате [desc]</string>
+   </property>
+  </action>
+  <action name="actionSortDateAsc">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Дате [asc]</string>
+   </property>
+  </action>
+  <action name="actionSortTitleDesc">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Названию [desc]</string>
+   </property>
+  </action>
+  <action name="actionSortTitleAsc">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Названию [asc]</string>
+   </property>
+  </action>
+  <action name="actionExportTagsTable">
+   <property name="text">
+    <string>Экспортировать таблицу тегов</string>
+   </property>
+   <property name="statusTip">
+    <string>Экспртировать таблицу тегов</string>
+   </property>
+  </action>
+  <action name="actionExportArticleTags">
+   <property name="text">
+    <string>Экспортировать теги статей</string>
+   </property>
+   <property name="statusTip">
+    <string>Экспортировать таблицу тегов статей</string>
+   </property>
+  </action>
+  <action name="actionImportTags">
+   <property name="text">
+    <string>Импорт тегов</string>
+   </property>
+   <property name="toolTip">
+    <string>Импорт тегов</string>
+   </property>
+   <property name="statusTip">
+    <string>Импорт тегов из json файла</string>
+   </property>
+  </action>
+  <action name="actionImportArticleTags">
+   <property name="text">
+    <string>Импорт тегов статей</string>
+   </property>
+   <property name="statusTip">
+    <string>Импорт тегов статей из json файла</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QWebEngineView</class>
+   <extends>QWidget</extends>
+   <header>qwebengineview.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>actionExit</sender>
+   <signal>triggered()</signal>
+   <receiver>Window</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>478</x>
+     <y>324</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

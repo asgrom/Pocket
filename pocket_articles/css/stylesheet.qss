@@ -1,0 +1,166 @@
+#tagsFrame, #articleListFrame, #articleViewFrame {
+    border: 1px inset rgba(200, 200, 200, 1);
+    border-radius: 5px;
+    border-bottom-style: solid;
+    padding: 0;
+    margin-left: 0;
+}
+#filterArticleLineEdit, #dbSearch {
+    border: 1px inset lightgrey;
+    border-radius: 10px;
+    padding: 0 8px;
+}
+
+QAbstractScrollArea::corner {
+    background: transparent;
+    border: solid;
+}
+
+QHeaderView::section:vertical,  QHeaderView::section:horizontal {
+    background-color: qlineargradient(x1:0,
+    y1: 0,
+    x2: 0,
+    y2: 1,
+    stop: 0 rgba(255, 170, 80, 0.3),
+    stop: 0.5 rgba(255, 170, 80, 0.6),
+    stop: 1 rgba(255, 170, 80, 1));
+    border: solid;
+    color: rgb(63, 63, 63);
+    padding: 0 0 0 5px;
+}
+
+QTreeView {
+    selection-background-color: transparent;
+    show-decoration-selected: 1;
+    color: rgb(63, 63, 63);
+    margin: 0;
+    padding: 0px 0 0 5px;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border: 1px inset rgba(200, 200, 200, 1);
+    background-color: #fff;
+}
+
+QTreeView::item {
+    height: 22px;
+    margin: 3px 0px;
+}
+
+QTreeView::branch {
+    margin: 3px 0px;
+}
+
+QTreeView::branch:selected:adjoins-item {
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    background-color: qlineargradient(x1:0,
+    y1: 0,
+    x2: 0,
+    y2: 1,
+    stop: 0 rgba(255, 170, 80, 0.3),
+    stop: 0.5 rgba(255, 170, 80, 0.6),
+    stop: 1 rgba(255, 170, 80, 1));
+}
+
+  QTreeView::branch:!adjoins-item {
+          background: transparent;
+  }
+
+QTreeView::item:selected {
+    color: black;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    background-color: qlineargradient(x1:0,
+    y1: 0,
+    x2: 0,
+    y2: 1,
+    stop: 0 rgba(255, 170, 80, 0.3),
+    stop: 0.5 rgba(255, 170, 80, 0.6),
+    stop: 1 rgba(255, 170, 80, 1));
+}
+
+QTableView {
+    selection-background-color: qlineargradient(x1:0,
+    y1: 0,
+    x2: 0,
+    y2: 1,
+    stop: 0 rgba(255, 170, 80, 0.3),
+    stop: 0.5 rgba(255, 170, 80, 0.6),
+    stop: 1 rgba(255, 170, 80, 1));
+
+    color: rgb(63, 63, 63);
+    border: 1px inset rgba(200, 200, 200, 1);
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    padding: 0 0px 0 0px;
+}
+
+QTableCornerButton::section {
+    background-color: qlineargradient(x1:0,
+    y1: 0,
+    x2: 0,
+    y2: 1,
+    stop: 0 rgba(255, 170, 80, 0.3),
+    stop: 0.5 rgba(255, 170, 80, 0.6),
+    stop: 1 rgba(255, 170, 80, 1));
+    border-style: solid;
+}
+
+ QScrollBar:vertical {
+    background-color: #efefef;
+    width: 12px;
+    margin: 0 0 0px 0;
+}
+
+ QScrollBar::handle:vertical {
+    background: qlineargradient(x1:0,
+    y1: 0,
+    x2: 1,
+    y2: 0,
+    stop: 0 rgba(255, 170, 80, 0.3),
+    stop: 0.5 rgba(255, 170, 80, 0.6),
+    stop: 1 rgba(255, 170, 80, 1));
+    border-radius: 5px;
+    min-height: 30px;
+    margin: 0px 1px 0px 1px;
+}
+
+ QScrollBar::add-line:vertical {
+    background: none;
+    height: 0px;
+}
+
+ QScrollBar::sub-line:vertical {
+    background: none;
+    height: 0px;
+}
+QScrollBar:horizontal {
+    background-color: #efefef;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    height: 12px;
+    margin: 0 0 0 0;
+}
+
+QScrollBar::handle:horizontal {
+    background: qlineargradient(x1:0,
+    y1: 0,
+    x2: 0,
+    y2: 1,
+    stop: 0 rgba(255, 170, 80, 0.3),
+    stop: 0.5 rgba(255, 170, 80, 0.6),
+    stop: 1 rgba(255, 170, 80, 1));
+    border-radius: 5px;
+    min-width: 30px;
+    margin: 1px 0px 1px 0px;
+}
+
+QScrollBar::add-line:horizontal {
+    background: none;
+    width: 0px;
+}
+
+QScrollBar::sub-line:horizontal {
+    background: none;
+    width: 0px;
+}

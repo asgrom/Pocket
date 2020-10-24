@@ -1,0 +1,42 @@
+<RCC>
+  <qresource prefix="/">
+    <file>images/add-database-button-for-interface.svg</file>
+    <file>images/arrow-down.png</file>
+    <file>images/arrow-left-bold.svg</file>
+    <file>images/arrow-left-thick.svg</file>
+    <file>images/arrow-right-bold.svg</file>
+    <file>images/arrow-right-thick.svg</file>
+    <file>images/back.svg</file>
+    <file>images/close-circle.svg</file>
+    <file>images/close-for-dark-theme.png</file>
+    <file>images/close-for-light-theme.png</file>
+    <file>images/database.svg</file>
+    <file>images/database-arrow-down.svg</file>
+    <file>images/database-arrow-left.svg</file>
+    <file>images/database-arrow-right.svg</file>
+    <file>images/database-arrow-up.svg</file>
+    <file>images/database-check.svg</file>
+    <file>images/database-export.svg</file>
+    <file>images/database-import.svg</file>
+    <file>images/database-plus.svg</file>
+    <file>images/database-sync.svg</file>
+    <file>images/document-import.png</file>
+    <file>images/fileclose.png</file>
+    <file>images/forward.svg</file>
+    <file>images/hline.png</file>
+    <file>images/iconfinder_037_95946.png</file>
+    <file>images/iconfinder_Arrow Left_31188.png</file>
+    <file>images/iconfinder_arrow_right_15185.png</file>
+    <file>images/iconfinder_old-edit-redo_23491.png</file>
+    <file>images/iconfinder_old-edit-undo_23492.png</file>
+    <file>images/icons8-add-database-50.png</file>
+    <file>images/icons8-add-to-database-50.png</file>
+    <file>images/icons8-database-50.png</file>
+    <file>images/icons8-database-export-50.png</file>
+    <file>images/icons8-database-import-50.png</file>
+    <file>images/icons8-exit-50.png</file>
+    <file>images/tag.png</file>
+    <file>images/window-close.svg</file>
+    <file>css/stylesheet.qss</file>
+  </qresource>
+</RCC>
