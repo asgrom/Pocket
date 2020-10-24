@@ -5,33 +5,30 @@
 #   Запоминать последнюю открытую статью.
 #   Проверить все методы с записью в базу на rollback.
 
+import json
 import os
 import re
 import sqlite3 as sql
 import sys
 import tempfile
 import traceback
-from lxml import html
-from lxml.html.clean import Cleaner
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from PyQt5.QtWebEngineWidgets import QWebEnginePage, QWebEngineSettings
+from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import *
+from lxml import html
+from lxml.html.clean import Cleaner
 
 from . import applogger
-from . import resources
+from . import changedb
+from . import resources #  noqa
 from .changedb import (add_tag, add_article, connect, export_articles, SqliteError, add_page_tag)
 from .getpagedata import get_data_from_page
 from .getpocketdata import get_pocket_data
 from .qarticletag import ArticleTag, DeleteArticleTagEvent
-from .qdelegate import Delegate
-from .qsearchpanel import SearchPanel
-from .qtablemodel import TableModel
-from .qtagcombobox import TagsComboBox
-from .qtproxystyle import ProxyStyle
-from .qtreeproxymodel import TreeViewProxyModel
 from .qmainwindowclass import MainWindow
+from .qtproxystyle import ProxyStyle
 
 logger = applogger.get_logger(__name__)
 
@@ -117,6 +114,49 @@ class Window(MainWindow):
         self.ui.webView.loadFinished.connect(self.highlight_searched_text)
         self.ui.urlToolButton.toggled.connect(self.show_url_label)
         self.ui.urlToolButton.toggled.connect(self.change_urlToolButton_icon)
+        # экспорт таблицы тегов
+        self.ui.actionExportTagsTable.triggered.connect(self.export_tags_table)
+        self.ui.actionExportArticleTags.triggered.connect(self.export_article_tags)
+
+    @pyqtSlot()
+    def export_article_tags(self):
+        """Экспорт таблицы webpagetags."""
+        try:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            table_list = changedb.export_webpagetags_table(self.con)
+            if not table_list:
+                QMessageBox.information(self, '', 'У статей нет тегов.')
+                return
+            file, _ = QFileDialog.getSaveFileName(directory=QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
+                                                  filter='json (*.json);;All (*)')
+            if not file: return
+            if not os.path.splitext(file)[-1]:
+                file = file + '.json'
+            with open(file, 'w') as fh:
+                json.dump(table_list, fh, indent=4, ensure_ascii=False)
+            QMessageBox.information(self, '', 'Экспортировано.')
+        finally:
+            QApplication.restoreOverrideCursor()
+
+    @pyqtSlot()
+    def export_tags_table(self):
+        """Экспорт таблицы тегов."""
+        try:
+            QApplication.setOverrideCursor(Qt.WaitCursor)
+            tag_list = changedb.export_tags_table(self.con)
+            if not tag_list:
+                QMessageBox.information(self, '', 'Нет тегов.')
+                return
+            file, _ = QFileDialog.getSaveFileName(directory=QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
+                                               filter='json (*.json);;All (*)')
+            if not file: return
+            if not os.path.splitext(file)[-1]:
+                file = file + '.json'
+            with open(file, 'w') as fh:
+                json.dump(tag_list, fh, ensure_ascii=False, indent=4)
+            QMessageBox.information(self, '', 'Экспортировано.')
+        finally:
+            QApplication.restoreOverrideCursor()
 
     @pyqtSlot(bool)
     def show_url_label(self, state: bool):
@@ -524,6 +564,7 @@ class Window(MainWindow):
     def export_db_to_html(self):
         """Экспорт базы данных в HTML"""
         folder = self.get_dir_name()
+        if not folder: return
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
             count = export_articles(folder, self.con.cursor())

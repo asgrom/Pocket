@@ -32,8 +32,11 @@ def connect(db: str = None) -> sql.Connection:
         import os
         dirname = os.path.dirname(os.path.realpath(__file__))
         # загрузка расширения для регистронезависимого поиска по базе
+        # noinspection PyUnresolvedReferences
         conn.enable_load_extension(True)
+        # noinspection PyUnresolvedReferences
         conn.load_extension(os.path.join(dirname, 'sqlite_ext/libSqliteIcu.so'))
+        # noinspection PyUnresolvedReferences
         conn.load_extension(os.path.join(dirname, 'sqlite_ext/fts5.so'))
         conn.executescript("pragma foreign_keys=on;")
         create_tables(conn)
@@ -41,6 +44,25 @@ def connect(db: str = None) -> sql.Connection:
     except sql.Error:
         logger.exception('Exception in connect to dbase')
         sys.exit()
+
+
+def export_tags_table(con: sql.Connection):
+    tags_list = list()
+    for tag in con.execute('select tag from tags;'):
+        tags_list.append({'tag': tag[0]})
+    return tags_list
+
+
+def export_webpagetags_table(con: sql.Connection):
+    request = """
+        select title, tag from webpages join
+        (select tag, id_page from tags join 
+            webpagetags where tags.id = webpagetags.id_tag)
+        where webpages.id = id_page order by title;"""
+    table_list = list()
+    for title, tag in con.execute(request):
+        table_list.append({title: tag})
+    return table_list
 
 
 def drop_tables(connector: sql.Connection):
