@@ -71,7 +71,50 @@ class Window(MainWindow):
 
     def __init__(self, parent=None):
         super(Window, self).__init__(parent)
+        self.connect_slots()
         self.load_data_from_db()
+
+    def connect_slots(self):
+        """Подключение слотов"""
+        self.ui.exportDataBaseAction.triggered.connect(self.export_db_to_html)
+        self.ui.actionImportHtml.triggered.connect(self.import_html)
+        self.ui.actionNewDBPocket.triggered.connect(self.create_new_db)
+        self.ui.actionNewDB.triggered.connect(self.create_new_db)
+        self.ui.actionOpenDbase.triggered.connect(self.open_other_db)
+        self.htmlImportedSignal.connect(self.load_data_from_db)
+        self.searchPanel.searched.connect(self.search_on_page)
+        self.ui.tagsView.customContextMenuRequested.connect(self.tagViewContextMenuRequested)
+        self.ui.articleView.customContextMenuRequested['QPoint'].connect(self.articleViewContextMenuRequested)
+        self.ui.actionSortTitleAsc.triggered.connect(
+            lambda _, col='title', order='asc': self.articleTitleModel.changeSortOrder(col, order)
+        )
+        self.ui.actionSortTitleDesc.triggered.connect(
+            lambda _, col='title', order='desc': self.articleTitleModel.changeSortOrder(col, order)
+        )
+        self.ui.actionSortDateAsc.triggered.connect(
+            lambda _, col='time_saved', order='asc': self.articleTitleModel.changeSortOrder(col, order)
+        )
+        self.ui.actionSortDateDesc.triggered.connect(
+            lambda _, col='time_saved', order='desc': self.articleTitleModel.changeSortOrder(col, order)
+        )
+        # выбор статьи для просмотра
+        self.ui.articleView.selectionModel().selectionChanged.connect(self.open_webpage)
+        # выбор в комбобоксе
+        # noinspection PyUnresolvedReferences
+        self.tagCBox.activated.connect(self.add_new_tag)
+        # фильтр в прокси-модели
+        self.ui.filterArticleLineEdit.returnPressed.connect(self.set_filter_article_title)
+        self.ui.filterArticleLineEdit.returnPressed.connect(self.ui.dbSearch.clear)
+        # выбор по тегу
+        self.tagViewSelectionModel.selectionChanged.connect(self.tag_selected)
+        # поиск по базе
+        self.ui.dbSearch.returnPressed.connect(self.db_search)
+        self.ui.dbSearch.returnPressed.connect(self.ui.filterArticleLineEdit.clear)
+        QShortcut(QKeySequence.Find, self, self.searchPanel.show)
+        # будут перехватываться события для фрейма, к которому принадлежит ArticleTag
+        # в частности, событие удаление тега у статьи
+        self.ui.articleViewFrame.customEvent = self.customEvent
+        self.ui.webView.loadFinished.connect(self.highlight_searched_text)
 
     @pyqtSlot()
     def update_articleTagModel(self, tag=None, tagId=None):
@@ -378,16 +421,15 @@ class Window(MainWindow):
         except Exception:
             logger.exception('Exception in load_data_from_db')
 
-    @pyqtSlot()
-    def create_articleTagModel(self):
-        """Создание списка тегов статей"""
-
-        self.articleTagModel.clear()
-
+    def create_line_item(self):
+        """Создает QStandardItem с изображением линии."""
         line = QStandardItem()
         line.setData('line', Qt.UserRole)
         line.setFlags(Qt.NoItemFlags)
+        return line
 
+    def create_favorites_item(self):
+        """Создает QStandardItem с избранным."""
         favorites = QStandardItem('Избранное')
         favorites_id = self.con.execute('select id from tags where tag="Избранное"')
         if not favorites_id:
@@ -398,7 +440,10 @@ class Window(MainWindow):
         favorites.setData(favorites_id, TagId)
         favorites.setData(0, Count)
         favorites.setEditable(False)
+        return favorites
 
+    def create_tags_item(self, favorites_id):
+        """Создает QStandardItem с тегами."""
         tags = QStandardItem('Теги')
         tags.setFlags(Qt.NoItemFlags)
         tags.setData('tags', TagId)
@@ -409,14 +454,20 @@ class Window(MainWindow):
             item.setData(0, Count)
             item.setData(_id, TagId)
             tags.appendRow(item)
+        return tags
 
+    def create_notags_item(self):
+        """Создает QStandardItem без тегов."""
         notags_count = self.con.execute(self.notags_req).fetchone()
         notags_count = 0 if not notags_count else notags_count[0]
         notags = QStandardItem(f'Без тегов')
         notags.setData('notags', TagId)
         notags.setData(notags_count, Count)
         notags.setEditable(False)
+        return notags
 
+    def create_all_articles_item(self):
+        """Создает QStandardItem все статьи."""
         article_count = self.con.execute(
             """
             select count(id) from webpages;
@@ -426,6 +477,17 @@ class Window(MainWindow):
         all_articles.setData('all_articles', TagId)
         all_articles.setData(article_count, Count)
         all_articles.setEditable(False)
+        return all_articles
+
+    @pyqtSlot()
+    def create_articleTagModel(self):
+        """Создание списка тегов статей"""
+        self.articleTagModel.clear()
+        line = self.create_line_item()
+        favorites = self.create_favorites_item()
+        tags = self.create_tags_item(favorites.data(TagId))
+        notags = self.create_notags_item()
+        all_articles = self.create_all_articles_item()
 
         self.articleTagModel.appendRow(all_articles)
         self.articleTagModel.appendRow(line)
@@ -640,6 +702,7 @@ def main():
     w = Window()
     w.show()
     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     main()
