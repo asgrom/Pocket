@@ -14,7 +14,6 @@ class ProxyStyle(QProxyStyle):
     def drawPrimitive(self, element: QStyle.PrimitiveElement, option: 'QStyleOption',
                       painter: QtGui.QPainter, widget: typing.Optional[QWidget] = ...) -> None:
 
-        # убираем фокусную рамку
         """
         Args:
             element (QStyle.PrimitiveElement):
@@ -22,6 +21,7 @@ class ProxyStyle(QProxyStyle):
             painter (QtGui.QPainter):
             widget:
         """
+        # убираем фокусную рамку
         if element == QStyle.PE_FrameFocusRect:
             return
         palette = option.palette

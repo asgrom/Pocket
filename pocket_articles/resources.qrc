@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="/">
+    <file>images/filter_list.svg</file>
+    <file>images/collapse-arrow.png</file>
+    <file>images/expand-arrow.png</file>
     <file>images/add-database-button-for-interface.svg</file>
     <file>images/arrow-down.png</file>
     <file>images/arrow-left-bold.svg</file>
@@ -40,7 +43,6 @@
     <file>images/search-150.svg</file>
     <file>images/tag.png</file>
     <file>images/window-close.svg</file>
-    <file>images/filter_list.svg</file>
     <file>icons/pocket128.png</file>
     <file>css/stylesheet.qss</file>
   </qresource>

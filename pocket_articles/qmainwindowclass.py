@@ -43,6 +43,8 @@ class MainWindow(QMainWindow):
         self.ui.dbSearch.addAction(QIcon(':/images/search-50.svg'), QLineEdit.LeadingPosition)
         # иконка в строку фильтра
         self.ui.filterArticleLineEdit.addAction(QIcon(':/images/filter_list.svg'), QLineEdit.LeadingPosition)
+        # прячем label с url
+        self.ui.urlLabel.hide()
 
         ################################################################################
         # отображение списка статей
@@ -82,7 +84,7 @@ class MainWindow(QMainWindow):
         self.articleTagsHBox.addWidget(self.tagIcon)
         self.articleTagsHBox.addWidget(self.tagCBox)
         self.articleTagsHBox.addStretch(1)  # пружина в конце бокса
-        self.ui.verticalLayout_2.insertLayout(1, self.articleTagsHBox)
+        self.ui.verticalLayout_2.insertLayout(2, self.articleTagsHBox)
 
         ################################################################################
         # SearchPanel

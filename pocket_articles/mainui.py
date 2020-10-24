@@ -10,6 +10,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5 import QtWebEngineWidgets
+# noinspection PyUnresolvedReferences
 from . import resources
 
 
@@ -122,9 +123,12 @@ class Ui_MainUI(object):
         self.articleViewFrame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.articleViewFrame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.articleViewFrame.setObjectName("articleViewFrame")
-        self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.articleViewFrame)
-        self.verticalLayout_2.setContentsMargins(5, 5, 5, 5)
+        self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.articleViewFrame)
+        self.verticalLayout_4.setObjectName("verticalLayout_4")
+        self.verticalLayout_2 = QtWidgets.QVBoxLayout()
         self.verticalLayout_2.setObjectName("verticalLayout_2")
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
         self.pageTitleLabel = QtWidgets.QLabel(self.articleViewFrame)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -133,7 +137,27 @@ class Ui_MainUI(object):
         self.pageTitleLabel.setSizePolicy(sizePolicy)
         self.pageTitleLabel.setFrameShape(QtWidgets.QFrame.NoFrame)
         self.pageTitleLabel.setObjectName("pageTitleLabel")
-        self.verticalLayout_2.addWidget(self.pageTitleLabel)
+        self.horizontalLayout_2.addWidget(self.pageTitleLabel)
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.horizontalLayout_2.addItem(spacerItem)
+        self.urlToolButton = QtWidgets.QToolButton(self.articleViewFrame)
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap(":/images/expand-arrow.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.urlToolButton.setIcon(icon1)
+        self.urlToolButton.setCheckable(True)
+        self.urlToolButton.setAutoRaise(True)
+        self.urlToolButton.setArrowType(QtCore.Qt.NoArrow)
+        self.urlToolButton.setObjectName("urlToolButton")
+        self.horizontalLayout_2.addWidget(self.urlToolButton)
+        self.verticalLayout_2.addLayout(self.horizontalLayout_2)
+        self.urlLabel = QtWidgets.QLabel(self.articleViewFrame)
+        self.urlLabel.setEnabled(True)
+        self.urlLabel.setWordWrap(True)
+        self.urlLabel.setOpenExternalLinks(True)
+        self.urlLabel.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse|QtCore.Qt.TextSelectableByMouse)
+        self.urlLabel.setObjectName("urlLabel")
+        self.verticalLayout_2.addWidget(self.urlLabel)
+        self.verticalLayout_4.addLayout(self.verticalLayout_2)
         self.webView = QtWebEngineWidgets.QWebEngineView(self.articleViewFrame)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -142,7 +166,7 @@ class Ui_MainUI(object):
         self.webView.setSizePolicy(sizePolicy)
         self.webView.setMinimumSize(QtCore.QSize(50, 50))
         self.webView.setObjectName("webView")
-        self.verticalLayout_2.addWidget(self.webView)
+        self.verticalLayout_4.addWidget(self.webView)
         self.gridLayout_2.addWidget(self.splitter_2, 0, 0, 1, 1)
         MainUI.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainUI)
@@ -225,29 +249,20 @@ class Ui_MainUI(object):
 
         self.retranslateUi(MainUI)
         self.actionExit.triggered.connect(MainUI.close)
+        self.urlToolButton.toggled['bool'].connect(self.urlLabel.show)
         QtCore.QMetaObject.connectSlotsByName(MainUI)
 
     def retranslateUi(self, MainUI):
         _translate = QtCore.QCoreApplication.translate
         MainUI.setWindowTitle(_translate("MainUI", "Pocket Articles"))
         self.label_3.setText(_translate("MainUI", "Теги сохраненных статей"))
-        self.filterArticleLineEdit.setToolTip(_translate(
-            "MainUI",
-            """<html><head/><body><p>Поиск по части слова: <span style=\" font-weight:600;\">программ*</span> 
-            (программа, программирование...).</p><p>Словосочетание с дефисом: <span style=\" font-weight:600;\">&quot;
-            медиа-сервер&quot;</span> (заключить в кавычки).</p><p>Найти словосочетание: <span style=\" 
-            font-weight:600;\">&quot;вкусный обед&quot;</span> (заключить в кавычки).</p><p>Словосочетание: 
-            <span style=\" font-weight:600;\">вкусный обед</span> (найдет в любом порядке).</p></body></html>"""))
+        self.filterArticleLineEdit.setToolTip(_translate("MainUI", "<html><head/><body><p>Поиск по части слова: <span style=\" font-weight:600;\">программ*</span> (программа, программирование...).</p><p>Словосочетание с дефисом: <span style=\" font-weight:600;\">&quot;медиа-сервер&quot;</span> (заключить в кавычки).</p><p>Найти словосочетание: <span style=\" font-weight:600;\">&quot;вкусный обед&quot;</span> (заключить в кавычки).</p><p>Словосочетание: <span style=\" font-weight:600;\">вкусный обед</span> (найдет в любом порядке).</p></body></html>"))
         self.filterArticleLineEdit.setPlaceholderText(_translate("MainUI", "Фильтр"))
-        self.dbSearch.setToolTip(_translate(
-            "MainUI",
-            """<html><head/><body><p>Поиск по части слова: <span style=\" font-weight:600;\">программ*</span> 
-            (программа, программирование...).</p><p>Словосочетание с дефисом: <span style=\" font-weight:600;\">&quot;
-            медиа-сервер&quot;</span> (заключить в кавычки).</p><p>Найти словосочетание: <span style=\" 
-            font-weight:600;\">&quot;вкусный обед&quot;</span> (заключить в кавычки).</p><p>Словосочетание: 
-            <span style=\" font-weight:600;\">вкусный обед</span> (найдет в любом порядке).</p></body></html>"""))
+        self.dbSearch.setToolTip(_translate("MainUI", "<html><head/><body><p>Поиск по части слова: <span style=\" font-weight:600;\">программ*</span> (программа, программирование...).</p><p>Словосочетание с дефисом: <span style=\" font-weight:600;\">&quot;медиа-сервер&quot;</span> (заключить в кавычки).</p><p>Найти словосочетание: <span style=\" font-weight:600;\">&quot;вкусный обед&quot;</span> (заключить в кавычки).</p><p>Словосочетание: <span style=\" font-weight:600;\">вкусный обед</span> (найдет в любом порядке).</p></body></html>"))
         self.dbSearch.setPlaceholderText(_translate("MainUI", "Поиск по базе данных"))
         self.pageTitleLabel.setText(_translate("MainUI", "Просмотр статьи"))
+        self.urlToolButton.setText(_translate("MainUI", "URL"))
+        self.urlLabel.setText(_translate("MainUI", "TextLabel"))
         self.menu.setTitle(_translate("MainUI", "Файл"))
         self.viewMenu.setTitle(_translate("MainUI", "Вид"))
         self.sortArticlesSubmenu.setTitle(_translate("MainUI", "Сортировать статьи по"))

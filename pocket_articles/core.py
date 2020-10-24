@@ -115,6 +115,20 @@ class Window(MainWindow):
         # в частности, событие удаление тега у статьи
         self.ui.articleViewFrame.customEvent = self.customEvent
         self.ui.webView.loadFinished.connect(self.highlight_searched_text)
+        self.ui.urlToolButton.toggled.connect(self.show_url_label)
+        self.ui.urlToolButton.toggled.connect(self.change_urlToolButton_icon)
+
+    @pyqtSlot(bool)
+    def show_url_label(self, state: bool):
+        if not state:
+            self.ui.urlLabel.hide()
+
+    @pyqtSlot(bool)
+    def change_urlToolButton_icon(self, state: bool):
+        if state:
+            self.ui.urlToolButton.setIcon(QIcon(':/images/collapse-arrow.png'))
+        else:
+            self.ui.urlToolButton.setIcon(QIcon(':/images/expand-arrow.png'))
 
     @pyqtSlot()
     def update_articleTagModel(self, tag=None, tagId=None):
@@ -644,8 +658,8 @@ class Window(MainWindow):
         index = selection.indexes()[-1]
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            html = self.con.execute(
-                """select content from webpages where id=?""", (index.data(Qt.UserRole),)).fetchone()[0]
+            html, url = self.con.execute(
+                """select content, url from webpages where id=?""", (index.data(Qt.UserRole),)).fetchone()
             tags = self.con.execute(
                 """select tag from tags where id in
                 (select id_tag from webpagetags where id_page = ?);""", (index.data(Qt.UserRole),)).fetchall()
@@ -674,6 +688,7 @@ class Window(MainWindow):
             fh.write(html)
         self.ui.webView.load(QUrl.fromLocalFile(self._tmphtmlfile))
         self.ui.pageTitleLabel.setText(index.data())
+        self.ui.urlLabel.setText(url)
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:
