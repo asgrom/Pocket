@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Window</class>
- <widget class="QMainWindow" name="Window">
+ <class>MainUI</class>
+ <widget class="QMainWindow" name="MainUI">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -14,8 +14,8 @@
    <string>Pocket Articles</string>
   </property>
   <property name="windowIcon">
-   <iconset>
-    <normaloff>../icons/icons8-pocket_128px.png</normaloff>../icons/icons8-pocket_128px.png</iconset>
+   <iconset resource="../resources.qrc">
+    <normaloff>:/icons/pocket128.png</normaloff>:/icons/pocket128.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
@@ -469,12 +469,14 @@
    <header>qwebengineview.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../resources.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>actionExit</sender>
    <signal>triggered()</signal>
-   <receiver>Window</receiver>
+   <receiver>MainUI</receiver>
    <slot>close()</slot>
    <hints>
     <hint type="sourcelabel">

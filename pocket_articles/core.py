@@ -24,7 +24,6 @@ from . import resources
 from .changedb import (add_tag, add_article, connect, export_articles, SqliteError, add_page_tag)
 from .getpagedata import get_data_from_page
 from .getpocketdata import get_pocket_data
-from .mainwindow import Ui_MainWindow
 from .qarticletag import ArticleTag, DeleteArticleTagEvent
 from .qdelegate import Delegate
 from .qsearchpanel import SearchPanel
@@ -130,7 +129,7 @@ class Window(MainWindow):
             QApplication.setOverrideCursor(Qt.WaitCursor)
             self.con.execute('delete from tags where id = ?', [index.data(TagId)])
             self.con.commit()
-            logger.debug(f'Удален тег {index.data(Qt.DisplayRole)}')
+            logger.info(f'Удален тег {index.data(Qt.DisplayRole)}')
             modelIndex = self.tagProxyModel.mapToSource(index)
             self.articleTagModel.removeRow(modelIndex.row(), modelIndex.parent())
             self.create_cbx_model()
@@ -641,3 +640,6 @@ def main():
     w = Window()
     w.show()
     sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    main()

@@ -1,18 +1,16 @@
-from abc import abstractmethod, ABC
-
-from PyQt5.QtCore import pyqtSignal, Qt, QPoint, QItemSelection
+from PyQt5.QtCore import pyqtSignal, Qt
 from PyQt5.QtGui import QStandardItemModel, QPixmap, QIcon, QKeySequence
 from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 from PyQt5.QtWidgets import (QMainWindow, QHeaderView, QHBoxLayout, QLabel, QSizePolicy, QMenu, QActionGroup,
-                             QAction, QShortcut)
+                             QAction, QShortcut, QLineEdit)
 
-from pocket_articles.changedb import connect
-from pocket_articles.mainwindow import Ui_MainWindow
-from pocket_articles.qdelegate import Delegate
-from pocket_articles.qsearchpanel import SearchPanel
-from pocket_articles.qtablemodel import TableModel
-from pocket_articles.qtagcombobox import TagsComboBox
-from pocket_articles.qtreeproxymodel import TreeViewProxyModel
+from .changedb import connect
+from .mainui import Ui_MainUI
+from .qdelegate import Delegate
+from .qsearchpanel import SearchPanel
+from .qtablemodel import TableModel
+from .qtagcombobox import TagsComboBox
+from .qtreeproxymodel import TreeViewProxyModel
 
 
 class MainWindow(QMainWindow):
@@ -35,12 +33,16 @@ class MainWindow(QMainWindow):
         settings.setAttribute(QWebEngineSettings.AllowRunningInsecureContent, True)
         settings.setAttribute(QWebEngineSettings.PluginsEnabled, True)
 
-        self.ui = Ui_MainWindow()
+        self.ui = Ui_MainUI()
         self.ui.setupUi(self)
         self.loadUi()
 
     def loadUi(self):
         """Инициализация основных элементов интерфеса"""
+        # иконка лупы в строке поиска по базе
+        self.ui.dbSearch.addAction(QIcon(':/images/search-50.svg'), QLineEdit.LeadingPosition)
+        # иконка в строку фильтра
+        self.ui.filterArticleLineEdit.addAction(QIcon(':/images/filter_list.svg'), QLineEdit.LeadingPosition)
 
         ################################################################################
         # отображение списка статей
@@ -62,6 +64,7 @@ class MainWindow(QMainWindow):
         self.ui.tagsView.sortByColumn(0, Qt.AscendingOrder)
         self.tagProxyModel = TreeViewProxyModel()
         self.tagProxyModel.setSortCaseSensitivity(Qt.CaseInsensitive)
+        # noinspection PyTypeChecker
         self.tagProxyModel.setSourceModel(self.articleTagModel)
         self.ui.tagsView.setModel(self.tagProxyModel)
         self.tagViewSelectionModel = self.ui.tagsView.selectionModel()
@@ -154,6 +157,7 @@ class MainWindow(QMainWindow):
         # выбор статьи для просмотра
         self.ui.articleView.selectionModel().selectionChanged.connect(self.open_webpage)
         # выбор в комбобоксе
+        # noinspection PyUnresolvedReferences
         self.tagCBox.activated.connect(self.add_new_tag)
         # фильтр в прокси-модели
         self.ui.filterArticleLineEdit.returnPressed.connect(self.set_filter_article_title)
@@ -167,5 +171,4 @@ class MainWindow(QMainWindow):
         # будут перехватываться события для фрейма, к которому принадлежит ArticleTag
         # в частности, событие удаление тега у статьи
         self.ui.articleViewFrame.customEvent = self.customEvent
-
         self.ui.webView.loadFinished.connect(self.highlight_searched_text)

@@ -1,11 +1,11 @@
-import os
-
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot
-from PyQt5.QtGui import QKeySequence, QPalette, QShowEvent, QIcon
+from PyQt5.QtGui import QKeySequence, QShowEvent, QIcon
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QHBoxLayout, QPushButton, QCheckBox, QLineEdit, QShortcut
 
 from . import applogger
+# noinspection PyUnresolvedReferences
+from . import resources
 
 logger = applogger.get_logger(__name__)
 
@@ -16,7 +16,7 @@ _QSS = """
         border-style: inset;
         border-width: 1px;
         border-color: rgba(83, 145, 222, 0.8);
-        padding: 0 8px;
+        /*padding: 0 8px;*/
     }
     QPushButton {
         border-style: none;
@@ -40,7 +40,6 @@ _QSS = """
 
 class SearchPanel(QWidget):
     searched = pyqtSignal(str, QWebEnginePage.FindFlag)
-    dir_images = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
 
     def __init__(self, parent=None):
         """
@@ -67,6 +66,7 @@ class SearchPanel(QWidget):
         self.caseSensitively = QCheckBox('Учитывать регистр')
 
         self.search_le = QLineEdit()
+        self.search_le.addAction(QIcon(':/images/search-50.svg'), QLineEdit.LeadingPosition)
         self.search_le.setClearButtonEnabled(True)
 
         self.closeBtn = QPushButton(icon_close, '')

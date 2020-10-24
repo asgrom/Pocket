@@ -35,8 +35,13 @@
     <file>images/icons8-database-export-50.png</file>
     <file>images/icons8-database-import-50.png</file>
     <file>images/icons8-exit-50.png</file>
+    <file>images/search-50.svg</file>
+    <file>images/search-100.svg</file>
+    <file>images/search-150.svg</file>
     <file>images/tag.png</file>
     <file>images/window-close.svg</file>
+    <file>images/filter_list.svg</file>
+    <file>icons/pocket128.png</file>
     <file>css/stylesheet.qss</file>
   </qresource>
 </RCC>
