@@ -115,6 +115,12 @@ def create_tables(connector: sql.Connection):
                 constraint fk_id_tag foreign key (id_tag) references tags (id)
                     on update cascade on delete cascade
                 );
+                CREATE TABLE "html_contents"(
+                    "page_id"	INTEGER NOT NULL UNIQUE,
+                    "html"	TEXT NOT NULL,
+                    constraint fk_page_id FOREIGN KEY("page_id") REFERENCES "webpages"("id")
+                    on update cascade on delete cascade
+                    );
                 create virtual table if not exists 'webcontents' using FTS5('id_page' unindexed, 'title', 'content');
                 """)
     except sql.Error:

@@ -1,6 +1,8 @@
 # todo:
+#   Сделать возможность загрузки.
 #   Сделать экспорт тегов, тегов статей
 #   Сделать импорт тегов, статей тегов
+#   Переименовать модули с классами.
 #   Пересмотреть вызовы логгера
 #   Запоминать последнюю открытую статью.
 #   Проверить все методы с записью в базу на rollback.
@@ -17,18 +19,16 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import *
-from lxml import html
-from lxml.html.clean import Cleaner
 
 from . import applogger
-from . import changedb
-from . import resources #  noqa
-from .changedb import (add_tag, add_article, connect, export_articles, SqliteError, add_page_tag)
-from .getpagedata import get_data_from_page
+from . import dbmethods
+from . import resources
+from .dbmethods import (add_tag, add_article, connect, export_articles, SqliteError, add_page_tag)
+from .getpagedata import get_data_from_page, get_page_text_content
 from .getpocketdata import get_pocket_data
-from .qarticletag import ArticleTag, DeleteArticleTagEvent
-from .qmainwindowclass import MainWindow
-from .qtproxystyle import ProxyStyle
+from .articletag import ArticleTag, DeleteArticleTagEvent
+from .mainwindow import MainWindow
+from .proxystyle import ProxyStyle
 
 logger = applogger.get_logger(__name__)
 
@@ -44,24 +44,6 @@ def log_uncaught_exceptions(ex_cls, ex, tb):
 
 
 sys.excepthook = log_uncaught_exceptions
-
-cleaner = Cleaner(style=True)
-
-
-def get_page_text_content(content):
-    """Получает текстовое содержимое html-страницы.
-
-    Parameters
-    ----------
-    content: str
-        html-code страницы
-    """
-    doc = html.document_fromstring(content)
-    doc = cleaner.clean_html(doc)
-    text = ''.join(doc.xpath('//text()'))
-    text = re.sub('\n', ' ', text)
-    text = re.sub(' {2,}', ' ', text)
-    return text
 
 
 class Window(MainWindow):
@@ -116,25 +98,57 @@ class Window(MainWindow):
         self.ui.urlToolButton.toggled.connect(self.change_urlToolButton_icon)
         # экспорт таблицы тегов
         self.ui.actionExportTagsTable.triggered.connect(self.export_tags_table)
+        # экспорт таблицы webpagetags
         self.ui.actionExportArticleTags.triggered.connect(self.export_article_tags)
+        self.ui.actionImportTags.triggered.connect(self.import_tags)
+
+    @pyqtSlot()
+    def import_tags(self):
+        file, _ = QFileDialog.getOpenFileName(directory=QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
+                                              filter='json (*.json);;All (*)')
+        if not file:
+            return
+        try:
+            fh = open(file)
+        except OSError:
+            logger.exception('Ошибка открытия файла')
+            QMessageBox.critical(self, '', 'Ошибка открытия файла. Смотри лог-файл.')
+            return
+        try:
+            self.con.execute('begin transaction;')
+            cur = self.con.cursor()
+            for data in json.load(fh):
+                print(data['tag'])
+            QMessageBox.information(self, '', 'Импортирование тегов завершено.')
+        except sql.DatabaseError:
+            logger.warning(f'Ошибка\n{traceback.format_exc()}')
+        except Exception:
+            logger.exception('Exception in import tags')
+            fh.close()
+            cur.close()
 
     @pyqtSlot()
     def export_article_tags(self):
         """Экспорт таблицы webpagetags."""
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            table_list = changedb.export_webpagetags_table(self.con)
+            table_list = dbmethods.export_webpagetags_table(self.con)
             if not table_list:
                 QMessageBox.information(self, '', 'У статей нет тегов.')
                 return
-            file, _ = QFileDialog.getSaveFileName(directory=QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
-                                                  filter='json (*.json);;All (*)')
-            if not file: return
+            file, _ = QFileDialog.getSaveFileName(
+                directory=QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
+                filter='json (*.json);;All (*)')
+            if not file:
+                return
             if not os.path.splitext(file)[-1]:
                 file = file + '.json'
             with open(file, 'w') as fh:
                 json.dump(table_list, fh, indent=4, ensure_ascii=False)
             QMessageBox.information(self, '', 'Экспортировано.')
+        except sql.DatabaseError:
+            logger.exception('Exception in tags table exporting')
+            QMessageBox.critical(self, '', 'Ошибка экспорта')
         finally:
             QApplication.restoreOverrideCursor()
 
@@ -143,18 +157,23 @@ class Window(MainWindow):
         """Экспорт таблицы тегов."""
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            tag_list = changedb.export_tags_table(self.con)
+            tag_list = dbmethods.export_tags_table(self.con)
             if not tag_list:
                 QMessageBox.information(self, '', 'Нет тегов.')
                 return
-            file, _ = QFileDialog.getSaveFileName(directory=QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
-                                               filter='json (*.json);;All (*)')
-            if not file: return
+            file, _ = QFileDialog.getSaveFileName(
+                directory=QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
+                filter='json (*.json);;All (*)')
+            if not file:
+                return
             if not os.path.splitext(file)[-1]:
                 file = file + '.json'
             with open(file, 'w') as fh:
                 json.dump(tag_list, fh, ensure_ascii=False, indent=4)
             QMessageBox.information(self, '', 'Экспортировано.')
+        except sql.DatabaseError:
+            logger.exception('Exception in webpagetags exporting')
+            QMessageBox.critical(self, '', 'Ошибка экспорта')
         finally:
             QApplication.restoreOverrideCursor()
 
@@ -251,7 +270,6 @@ class Window(MainWindow):
         color = self.searchPanel.palette().color(QPalette.Base).getRgb()
 
         def callback(result):
-            palette = QPalette()
             if not result and text != '':
                 self.searchPanel.search_le.setStyleSheet('background: rgba(255, 0, 0, 0.5);')
             else:
@@ -386,10 +404,10 @@ class Window(MainWindow):
         if not txt:
             self.articleTitleModel.changeSqlQuery()
         else:
-            query = ("""
-            select time_saved, webpages.title, id from webpages
-            join webcontents on id=id_page where webcontents.content match '{}' """.format(txt) +
-                     """order by rank limit ? offset ?;""")
+            query = ' '.join([
+                    """select time_saved, webpages.title, id from webpages
+                    join webcontents on id=id_page where webcontents.content match '{}' """.format(txt),
+                    """order by rank limit ? offset ?;"""])
             self.articleTitleModel.changeSqlQuery(query)
         QApplication.restoreOverrideCursor()
 
@@ -405,13 +423,14 @@ class Window(MainWindow):
             query = ("""select time_saved, title, id
                     from webpages
                     where id not in
-                    (select id_page from webpagetags group by id_page)""" +
-                     """order by lower({}) {} limit ? offset ?;""")
+                    (select id_page from webpagetags group by id_page)
+                     order by lower({}) {} limit ? offset ?;""")
         else:
-            query = ("""select time_saved, title, webpages.id
-                    from webpages inner join webpagetags w on webpages.id = w.id_page
-                    where w.id_tag = {} """.format(index.data(Qt.UserRole)) +
-                     """order by lower({}) {} limit ? offset ?;""")
+            query = ' '.join([
+                """select time_saved, title, webpages.id
+                from webpages inner join webpagetags w on webpages.id = w.id_page
+                where w.id_tag = {} """.format(index.data(Qt.UserRole)),
+                """order by lower({}) {} limit ? offset ?;"""])
         self.articleTitleModel.changeSqlQuery(query)
 
     @pyqtSlot()
@@ -420,10 +439,11 @@ class Window(MainWindow):
         if not self.ui.filterArticleLineEdit.text():
             self.articleTitleModel.changeSqlQuery()
             return
-        sql_request = ("select time_saved, webpages.title, id from webpages join "
-                       "webcontents on id=id_page "
-                       "where webcontents.title match '{}'".format(self.ui.filterArticleLineEdit.text()) +
-                       "order by rank limit ? offset ?")
+        sql_request = ' '.join([
+            """select time_saved, webpages.title, id from webpages join
+            webcontents on id=id_page
+            where webcontents.title match '{}'""".format(self.ui.filterArticleLineEdit.text()),
+            """order by rank limit ? offset ?"""])
         self.articleTitleModel.changeSqlQuery(sql_request)
 
     @pyqtSlot(int)
@@ -564,7 +584,8 @@ class Window(MainWindow):
     def export_db_to_html(self):
         """Экспорт базы данных в HTML"""
         folder = self.get_dir_name()
-        if not folder: return
+        if not folder:
+            return
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
             count = export_articles(folder, self.con.cursor())

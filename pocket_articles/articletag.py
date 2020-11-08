@@ -46,7 +46,8 @@ class ArticleTag(QLineEdit):
         width = fm.width(self.text())  # ширина строки в пикселах
         self.setFixedWidth(width + 34 + 5)
         self.setStyleSheet(_QSS)
-        # вствляем иконку действия
+        # вставляем иконку действия
+        # noinspection PyNoneFunctionAssignment
         self.deleteAction = self.addAction(icon, QLineEdit.TrailingPosition)
         self.deleteAction.triggered.connect(self.action_triggered)
 

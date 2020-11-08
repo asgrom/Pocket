@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file
-# '/home/alexandr/PycharmProjects/Pocket/pocket_articles/ui/mainui.ui'
+# Form implementation generated from reading ui file '/home/alexandr/PycharmProjects/Pocket/pocket_articles/ui/mainui.ui'
 #
 # Created by: PyQt5 UI code generator 5.14.1
 #
 # WARNING! All changes made in this file will be lost!
 
 
-from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5 import QtWebEngineWidgets
-# noinspection PyUnresolvedReferences
 from . import resources
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class Ui_MainUI(object):
@@ -80,6 +78,7 @@ class Ui_MainUI(object):
         self.articleListFrame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.articleListFrame.setObjectName("articleListFrame")
         self.verticalLayout = QtWidgets.QVBoxLayout(self.articleListFrame)
+        self.verticalLayout.setContentsMargins(5, 5, 5, 5)
         self.verticalLayout.setObjectName("verticalLayout")
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
@@ -124,6 +123,7 @@ class Ui_MainUI(object):
         self.articleViewFrame.setFrameShadow(QtWidgets.QFrame.Raised)
         self.articleViewFrame.setObjectName("articleViewFrame")
         self.verticalLayout_4 = QtWidgets.QVBoxLayout(self.articleViewFrame)
+        self.verticalLayout_4.setContentsMargins(5, 5, 5, 5)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
         self.verticalLayout_2 = QtWidgets.QVBoxLayout()
         self.verticalLayout_2.setObjectName("verticalLayout_2")
@@ -154,10 +154,9 @@ class Ui_MainUI(object):
         self.urlLabel.setEnabled(True)
         self.urlLabel.setWordWrap(True)
         self.urlLabel.setOpenExternalLinks(True)
-        self.urlLabel.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse|QtCore.Qt.TextSelectableByMouse)
+        self.urlLabel.setTextInteractionFlags(QtCore.Qt.LinksAccessibleByMouse | QtCore.Qt.TextSelectableByMouse)
         self.urlLabel.setObjectName("urlLabel")
         self.verticalLayout_2.addWidget(self.urlLabel)
-        self.verticalLayout_4.addLayout(self.verticalLayout_2)
         self.webView = QtWebEngineWidgets.QWebEngineView(self.articleViewFrame)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -166,7 +165,8 @@ class Ui_MainUI(object):
         self.webView.setSizePolicy(sizePolicy)
         self.webView.setMinimumSize(QtCore.QSize(50, 50))
         self.webView.setObjectName("webView")
-        self.verticalLayout_4.addWidget(self.webView)
+        self.verticalLayout_2.addWidget(self.webView)
+        self.verticalLayout_4.addLayout(self.verticalLayout_2)
         self.gridLayout_2.addWidget(self.splitter_2, 0, 0, 1, 1)
         MainUI.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainUI)

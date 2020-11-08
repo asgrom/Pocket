@@ -47,10 +47,10 @@ class TagsComboBox(QComboBox):
         self.setEditable(True)
         self.lineEdit().setPlaceholderText(self.defaultText)
         self.lineEdit().setClearButtonEnabled(True)
-        # self.setMinimumWidth(130)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.setSizeAdjustPolicy(QComboBox.AdjustToContents)
         self.setInsertPolicy(QComboBox.InsertAlphabetically)
+        # noinspection PyUnresolvedReferences
         self.activated.connect(self.on_activated)
         self.setStyleSheet(_QSS)
         self.lineEdit().setStyleSheet(

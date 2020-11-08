@@ -13,5 +13,5 @@ setup(
         'console_scripts': [
             'pocket-qt = pocket_articles.core:main'
         ]
-    }, install_requires=['lxml', 'dateutil']
+    }, install_requires=['lxml', 'dateutil', 'pocket']
 )

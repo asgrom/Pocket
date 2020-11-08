@@ -1,16 +1,16 @@
 from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtGui import QStandardItemModel, QPixmap, QIcon, QKeySequence
+from PyQt5.QtGui import QStandardItemModel, QPixmap, QIcon
 from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 from PyQt5.QtWidgets import (QMainWindow, QHeaderView, QHBoxLayout, QLabel, QSizePolicy, QMenu, QActionGroup,
-                             QAction, QShortcut, QLineEdit)
+                             QAction, QLineEdit)
 
-from .changedb import connect
+from .dbmethods import connect
 from .mainui import Ui_MainUI
-from .qdelegate import Delegate
-from .qsearchpanel import SearchPanel
-from .qtablemodel import TableModel
-from .qtagcombobox import TagsComboBox
-from .qtreeproxymodel import TreeViewProxyModel
+from .delegate import Delegate
+from .searchpanel import SearchPanel
+from .tablemodel import TableModel
+from .tagcombobox import TagsComboBox
+from .treeviewproxymodel import TreeViewProxyModel
 
 
 class MainWindow(QMainWindow):
@@ -131,4 +131,3 @@ class MainWindow(QMainWindow):
         self.ui.exportDataBaseAction.setIcon(QIcon(':/images/database-export.svg'))
         self.ui.actionExit.setIcon(QIcon(':/images/icons8-exit-50.png'))
         self.ui.actionOpenDbase.setIcon(QIcon(':/images/database.svg'))
-

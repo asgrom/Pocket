@@ -1,12 +1,12 @@
-"""Предоставляе методы для получения данных о сохранненых статьях с сервиса getpocket.com"""
-import sys
+"""Предоставляет методы для получения данных о сохранненых статьях с сервиса getpocket.com"""
 import webbrowser
+from . import applogger
 
 from pocket import Pocket, PocketException
 
 from . import CONSUMER_KEY, ACCESS_TOKEN
 
-pocket_json_data = {}  # данные с getpocket
+logger = applogger.get_logger(__name__)
 
 
 def open_articles_in_browser(data: dict):
@@ -41,6 +41,5 @@ def get_pocket_data(since=None, state=None, tag=None):
     try:
         p = Pocket(consumer_key=CONSUMER_KEY, access_token=ACCESS_TOKEN)
         return p.retrieve(since=since, state=state, tag=tag, detailType='complete')
-    except PocketException as e:
-        print(e)
-        sys.exit()
+    except PocketException:
+        logger.exception('Exception get_pocket_data')

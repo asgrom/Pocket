@@ -8,6 +8,24 @@ import re
 from dateutil import parser as dp
 from lxml import etree
 from lxml import html
+from lxml.html.clean import Cleaner
+
+
+def get_page_text_content(content):
+    """Получает текстовое содержимое html-страницы.
+
+    Parameters
+    ----------
+    content: str
+        html-code страницы
+    """
+    cleaner = Cleaner(style=True)
+    doc = html.document_fromstring(content)
+    doc = cleaner.clean_html(doc)
+    text = ''.join(doc.xpath('//text()'))
+    text = re.sub('\n', ' ', text)
+    text = re.sub(' {2,}', ' ', text)
+    return text
 
 
 def get_data_from_page(page):

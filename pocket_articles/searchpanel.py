@@ -85,6 +85,7 @@ class SearchPanel(QWidget):
         QShortcut(QKeySequence.FindPrevious, self, lambda: self.search(QWebEnginePage.FindBackward))
         QShortcut(QKeySequence(Qt.SHIFT + Qt.Key_F3), self, lambda: self.search(QWebEnginePage.FindBackward))
 
+        # ставим фокус на строку ввода
         self.setFocusProxy(self.search_le)
 
         self.search_le.returnPressed.connect(self.search)
