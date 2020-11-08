@@ -55,13 +55,13 @@ def export_tags_table(con: sql.Connection):
 
 def export_webpagetags_table(con: sql.Connection):
     request = """
-        select title, tag from webpages join
+        select title, tag, url from webpages join
         (select tag, id_page from tags join 
             webpagetags where tags.id = webpagetags.id_tag)
         where webpages.id = id_page order by title;"""
     table_list = list()
-    for title, tag in con.execute(request):
-        table_list.append({title: tag})
+    for title, tag, url in con.execute(request):
+        table_list.append({'title': title, 'tag': tag, 'url': url})
     return table_list
 
 

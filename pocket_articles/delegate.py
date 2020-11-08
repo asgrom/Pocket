@@ -24,6 +24,7 @@ class Delegate(QStyledItemDelegate):
         if option.state & QStyle.State_Selected:
             option.rect.setWidth(option.rect.width() - 5)
 
+        # дописывает количесво статей в строку с тегом
         if index.data(Qt.UserRole + 1) is not None:
             fm = option.fontMetrics
             rect = option.rect
