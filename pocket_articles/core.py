@@ -158,7 +158,7 @@ class Window(MainWindow):
                 QMessageBox.information(self, '', 'Нет тегов.')
                 return
             file, _ = QFileDialog.getSaveFileName(
-                directory=QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
+                directory=os.path.join(QStandardPaths.writableLocation(QStandardPaths.HomeLocation), 'tags.json'),
                 filter='json (*.json);;All (*)')
             if not file:
                 return

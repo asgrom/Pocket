@@ -48,8 +48,8 @@ def connect(db: str = None) -> sql.Connection:
 
 def export_tags_table(con: sql.Connection):
     tags_list = list()
-    for tag in con.execute('select tag from tags;'):
-        tags_list.append({'tag': tag[0]})
+    for tag, id_ in con.execute('select tag, id from tags;'):
+        tags_list.append({'tag': tag, 'id': int(id_)})
     return tags_list
 
 
