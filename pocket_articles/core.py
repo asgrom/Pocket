@@ -1,5 +1,4 @@
 # todo:
-#   Пересмотреть метод экспорта всех статей. Изменились таблицы в базе.
 #   При открытии новой базы вылетает ошибка при создании таблиц. Пересмотреть.
 #   Сделать возможность загрузки.
 #   Сделать экспорт тегов, тегов статей
@@ -294,7 +293,7 @@ class Window(MainWindow):
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
             content = self.con.execute(
-                """select content from webpages where id=?""", [article.data(Qt.UserRole)]
+                """select html from html_contents where page_id=?""", [article.data(Qt.UserRole)]
             ).fetchone()[-1]
             fname = re.sub('[/?<>*"|]', '', article.data(Qt.DisplayRole)[:122])
             fname = re.sub('( ){2,}', ' ', fname)
