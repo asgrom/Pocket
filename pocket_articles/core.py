@@ -1,5 +1,4 @@
 # todo:
-#   При открытии новой базы вылетает ошибка при создании таблиц. Пересмотреть.
 #   Сделать возможность загрузки.
 #   Сделать экспорт тегов, тегов статей
 #   Сделать импорт тегов, статей тегов
@@ -134,7 +133,7 @@ class Window(MainWindow):
                 QMessageBox.information(self, '', 'У статей нет тегов.')
                 return
             file, _ = QFileDialog.getSaveFileName(
-                directory=QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
+                directory=os.path.join(QStandardPaths.writableLocation(QStandardPaths.HomeLocation), 'articletags.json'),
                 filter='json (*.json);;All (*)')
             if not file:
                 return

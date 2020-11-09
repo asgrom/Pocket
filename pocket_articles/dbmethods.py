@@ -54,14 +54,22 @@ def export_tags_table(con: sql.Connection):
 
 
 def export_webpagetags_table(con: sql.Connection):
-    request = """
-        select title, tag, url from webpages join
-        (select tag, id_page from tags join 
-            webpagetags where tags.id = webpagetags.id_tag)
-        where webpages.id = id_page order by title;"""
+    request = """select title, GROUP_CONCAT(tag), group_concat(tag_id), url 
+        from webpages join
+    (select tag, id_page, tags.id as tag_id 
+        from tags join webpagetags where tags.id = webpagetags.id_tag)
+    where webpages.id = id_page group by title;"""
     table_list = list()
-    for title, tag, url in con.execute(request):
-        table_list.append({'title': title, 'tag': tag, 'url': url})
+    for title, tags, tags_id, url in con.execute(request):
+        dct = dict()
+        dct['title'] = title
+        dct['url'] = url
+        dct['tags'] = {}
+        tags = tags.split(',')
+        tags_id = tags_id.split(',')
+        for i in range(len(tags)):
+            dct['tags'].update({tags[i]: {'tag': tags[i], 'id': int(tags_id[i])}})
+        table_list.append(dct)
     return table_list
 
 
