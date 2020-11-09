@@ -115,7 +115,7 @@ def create_tables(connector: sql.Connection):
                 constraint fk_id_tag foreign key (id_tag) references tags (id)
                     on update cascade on delete cascade
                 );
-                CREATE TABLE "html_contents"(
+                create table if not exists "html_contents"(
                     "page_id"	INTEGER NOT NULL UNIQUE,
                     "html"	TEXT NOT NULL,
                     constraint fk_page_id FOREIGN KEY("page_id") REFERENCES "webpages"("id")
@@ -178,10 +178,11 @@ def add_article(title: str, url: str,
     """
     webpage_id = conn.execute(
         """
-        insert into webpages (title, url, time_saved, content) values (?, ?, ?, ?);""",
-        [title, url, time_saved, htmlContent]).lastrowid
+        insert into webpages (title, url, time_saved) values (?, ?, ?);""",
+        [title, url, time_saved]).lastrowid
     conn.execute("""insert into webcontents (id_page, title, content) values (?, ?, ?)""",
                  [webpage_id, title, textContent])
+    conn.execute("""insert into html_contents (page_id, html) values (?, ?);""", [webpage_id, htmlContent])
     logger.info(f'Добавлена статья "{title}"')
 
 
@@ -226,7 +227,7 @@ def export_articles(folder, cur: sql.Cursor):
     try:
         for id_page, title in cur.execute("""select id, title from webpages;""").fetchall():
             content = cur.execute(
-                """select content from webcontents where id_page=?;""", (id_page,)).fetchone()
+                """select html from html_contents where page_id=?;""", (id_page,)).fetchone()
             title = re.sub('[/?<>*"|]', '', title[:122])
             title = re.sub('( ){2,}', ' ', title)
             fname = os.path.join(folder, title) + '.html'

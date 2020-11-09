@@ -51,8 +51,9 @@ class ArticleTag(QLineEdit):
         self.deleteAction = self.addAction(icon, QLineEdit.TrailingPosition)
         self.deleteAction.triggered.connect(self.action_triggered)
 
+    # noinspection PyTypeChecker
     @pyqtSlot()
     def action_triggered(self):
-        # noinspection PyTypeChecker
-        QCoreApplication.sendEvent(self.parent(), DeleteArticleTagEvent(self.text()))
+        # Чтобы передать событие основному окну пришлось использовать метод виджета nativeParentWidget()
+        QCoreApplication.sendEvent(self.nativeParentWidget(), DeleteArticleTagEvent(self.text()))
         self.deleteLater()
