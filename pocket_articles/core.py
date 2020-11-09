@@ -90,9 +90,6 @@ class Window(MainWindow):
         self.ui.dbSearch.returnPressed.connect(self.db_search)
         self.ui.dbSearch.returnPressed.connect(self.ui.filterArticleLineEdit.clear)
         QShortcut(QKeySequence.Find, self, self.searchPanel.show)
-        # будут перехватываться события для фрейма, к которому принадлежит ArticleTag
-        # в частности, событие удаление тега у статьи
-        # self.ui.articleViewFrame.customEvent = self.customEvent
         self.ui.webView.loadFinished.connect(self.highlight_searched_text)
         self.ui.urlToolButton.toggled.connect(self.show_url_label)
         self.ui.urlToolButton.toggled.connect(self.change_urlToolButton_icon)
