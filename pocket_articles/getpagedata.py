@@ -31,7 +31,7 @@ def get_page_text_content(content):
 def get_data_from_page(page):
     """Получает данные из веб страницы.
 
-    Урл расположения страницы и title.
+    Урл расположения страницы, название статьи и дату сохранения копии страницы.
 
     Args:
         page (str): Html page file path.
