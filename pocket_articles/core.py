@@ -5,7 +5,7 @@
 #   Пересмотреть вызовы логгера
 #   Запоминать последнюю открытую статью.
 #   Проверить все методы с записью в базу на rollback.
-
+import hashlib
 import json
 import os
 import re
@@ -134,6 +134,9 @@ class Window(MainWindow):
     @pyqtSlot()
     def export_article_tags(self):
         """Экспорт таблицы webpagetags."""
+        # todo:
+        #   ПЕРЕСМОТРЕТЬ!!!!!!
+        #   сначала получить файл для сохранения или выйти если он не задан, а только потом делать запрос к базе.
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
             table_list = dbmethods.export_webpagetags_table(self.con)
@@ -693,14 +696,17 @@ class Window(MainWindow):
             for file in os.listdir(html_dir):
                 if file.endswith('html'):
                     filename = os.path.join(html_dir, file)
-                    title, url, saved_date = get_data_from_page(filename)
                     with open(filename) as f:
                         htmlContent = f.read()
+                    hash_ = hashlib.md5(htmlContent.encode()).hexdigest()
+                    if self.con.execute('select id from webpages where hash = ?', [hash_]).fetchone() is not None:
+                        continue
+                    title, url, saved_date = get_data_from_page(filename)
                     textContent = get_page_text_content(htmlContent)
                     try:
                         add_article(title=title, time_saved=saved_date, url=url,
                                     conn=self.con, htmlContent=htmlContent,
-                                    textContent=textContent)
+                                    textContent=textContent, hash_=hash_)
                         count += 1
                     except sql.IntegrityError:
                         logger.warning("Can't add article\n{}\n{}".format(title, traceback.format_exc()))
@@ -734,10 +740,9 @@ class Window(MainWindow):
             item = self.articleTagsHBox.itemAt(i)
             if isinstance(item.widget(), ArticleTag):
                 self.articleTagsHBox.takeAt(i).widget().deleteLater()
-        if tags:
-            for tag in tags:
-                self.articleTagsHBox.insertWidget(
-                    self.articleTagsHBox.count() - 1, ArticleTag(tag[0]))
+        for tag in tags:
+            self.articleTagsHBox.insertWidget(
+                self.articleTagsHBox.count() - 1, ArticleTag(tag[0]))
         try:
             os.unlink(self._tmphtmlfile)
         except (OSError, TypeError):

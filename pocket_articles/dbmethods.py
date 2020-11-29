@@ -55,17 +55,18 @@ def export_tags_table(con: sql.Connection):
 
 
 def export_webpagetags_table(con: sql.Connection):
-    request = """select title, GROUP_CONCAT(tag), group_concat(tag_id), url 
+    request = """select hash, title, GROUP_CONCAT(tag), group_concat(tag_id), url 
         from webpages join
     (select tag, id_page, tags.id as tag_id 
         from tags join webpagetags where tags.id = webpagetags.id_tag)
     where webpages.id = id_page group by title;"""
     table_list = list()
-    for title, tags, tags_id, url in con.execute(request):
+    for hash_, title, tags, tags_id, url in con.execute(request):
         dct = dict()
         dct['title'] = title
         dct['url'] = url
         dct['tags'] = {}
+        dct['hash'] = hash_
         tags = tags.split(',')
         tags_id = tags_id.split(',')
         for i in range(len(tags)):
@@ -175,9 +176,10 @@ def create_indexes(connector: sql.Connection):
 
 def add_article(title: str, url: str,
                 time_saved: str, htmlContent: str, textContent: str,
-                conn: sql.Connection):
+                conn: sql.Connection, hash_: str):
     """Запись html страницы в таблицу webpages
 
+    :param hash_: md5-сумма html-кода
     :param textContent: Текст страницы
     :param htmlContent: html-код страницы
     :param conn: Cursor базы данных
@@ -185,7 +187,6 @@ def add_article(title: str, url: str,
     :param url: Урл сохраненной страницы
     :param time_saved: Время сохраниния страницы в формате '%Y-%m-%d %H:%M:%S'
     """
-    hash_ = hashlib.md5(htmlContent.encode()).hexdigest()
     webpage_id = conn.execute(
         """
         insert into webpages (title, url, time_saved, hash) values (?, ?, ?, ?);""",
