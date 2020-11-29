@@ -22,7 +22,7 @@ def get_page_text_content(content):
     cleaner = Cleaner(style=True)
     doc = html.document_fromstring(content)
     doc = cleaner.clean_html(doc)
-    text = ''.join(doc.xpath('//text()'))
+    text = ' '.join(doc.xpath('//text()'))
     text = re.sub('\n', ' ', text)
     text = re.sub(' {2,}', ' ', text)
     return text

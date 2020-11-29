@@ -97,15 +97,18 @@ class MainWindow(QMainWindow):
         # QMenu Контекстное меню для articleTitleView
         ################################################################################
         self.articleViewContextMenu = QMenu()
-        self.articleViewContextMenu.addAction('Удалить статью', self.delete_article)
-        self.articleViewContextMenu.addAction('Экспортировать статью в HTML', self.export_article_to_html)
+        self.deleteArticleAction = QAction('Удалить статью')
+        self.articleViewContextMenu.addAction(self.deleteArticleAction)
+        self.exportArticleAction = QAction('Экспорт в HTML')
+        self.articleViewContextMenu.addAction(self.exportArticleAction)
         self.ui.articleView.setContextMenuPolicy(Qt.CustomContextMenu)
 
         ################################################################################
         # Контекстное меню для articleTagView
         ################################################################################
         self.tagViewContextMenu = QMenu()
-        self.tagViewContextMenu.addAction('Удалить тег', self.delete_tag_from_tagView)
+        self.deleteTagAction = QAction('Удалить тег')
+        self.tagViewContextMenu.addAction(self.deleteTagAction)
         self.ui.tagsView.setContextMenuPolicy(Qt.CustomContextMenu)
 
         ################################################################################

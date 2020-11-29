@@ -1,4 +1,5 @@
 """Предоставляет методы для работы с sqlite базой"""
+import hashlib
 import re
 import sqlite3 as sql
 import sys
@@ -105,9 +106,9 @@ def create_tables(connector: sql.Connection):
                 create table if not exists 'webpages' (
                 id integer primary key autoincrement,
                 'title' text,
-                'url' text not null unique,
+                'url' text,
                 'time_saved' text,
-                'content' text
+                'hash' text not null unique
                 );
                 create table if not exists 'tags' (
                 'id' integer primary key autoincrement,
@@ -184,10 +185,11 @@ def add_article(title: str, url: str,
     :param url: Урл сохраненной страницы
     :param time_saved: Время сохраниния страницы в формате '%Y-%m-%d %H:%M:%S'
     """
+    hash_ = hashlib.md5(htmlContent.encode()).hexdigest()
     webpage_id = conn.execute(
         """
-        insert into webpages (title, url, time_saved) values (?, ?, ?);""",
-        [title, url, time_saved]).lastrowid
+        insert into webpages (title, url, time_saved, hash) values (?, ?, ?, ?);""",
+        [title, url, time_saved, hash_]).lastrowid
     conn.execute("""insert into webcontents (id_page, title, content) values (?, ?, ?)""",
                  [webpage_id, title, textContent])
     conn.execute("""insert into html_contents (page_id, html) values (?, ?);""", [webpage_id, htmlContent])

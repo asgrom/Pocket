@@ -60,8 +60,14 @@ class Window(MainWindow):
         self.ui.actionOpenDbase.triggered.connect(self.open_other_db)
         self.htmlImportedSignal.connect(self.load_data_from_db)
         self.searchPanel.searched.connect(self.search_on_page)
+
         self.ui.tagsView.customContextMenuRequested.connect(self.tagViewContextMenuRequested)
+        self.deleteTagAction.triggered.connect(self.delete_tag_from_tagView)
+
         self.ui.articleView.customContextMenuRequested['QPoint'].connect(self.articleViewContextMenuRequested)
+        self.deleteArticleAction.triggered.connect(self.delete_article)
+        self.exportArticleAction.triggered.connect(self.export_article_to_html)
+
         self.ui.actionSortTitleAsc.triggered.connect(
             lambda _, col='title', order='asc': self.articleTitleModel.changeSortOrder(col, order)
         )
@@ -74,6 +80,7 @@ class Window(MainWindow):
         self.ui.actionSortDateDesc.triggered.connect(
             lambda _, col='time_saved', order='desc': self.articleTitleModel.changeSortOrder(col, order)
         )
+
         # выбор статьи для просмотра
         self.ui.articleView.selectionModel().selectionChanged.connect(self.open_webpage)
         # выбор в комбобоксе
@@ -99,6 +106,8 @@ class Window(MainWindow):
 
     @pyqtSlot()
     def import_tags(self):
+        # todo:
+        #   доделать метод!!!
         file, _ = QFileDialog.getOpenFileName(directory=QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
                                               filter='json (*.json);;All (*)')
         if not file:
@@ -652,7 +661,10 @@ class Window(MainWindow):
 
     @pyqtSlot()
     def create_tag_tables(self):
-        """Создание таблиц tag и webpageTags в базе данных"""
+        """Создание таблиц tag и webpageTags в базе данных.
+
+        Метод используется только если база создается из Pocket сервиса.
+        Данные берутся с сервиса Pocket."""
         pocket_data = get_pocket_data()
         articles_lst = pocket_data['list']
         cur = self.con.cursor()
