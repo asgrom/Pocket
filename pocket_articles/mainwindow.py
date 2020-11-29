@@ -129,7 +129,6 @@ class MainWindow(QMainWindow):
         # иконки для меню
         ################################################################################
         self.ui.actionNewDB.setIcon(QIcon(':/images/database-plus.svg'))
-        self.ui.actionNewDBPocket.setIcon(QIcon(':/images/database-plus.svg'))
         self.ui.actionImportHtml.setIcon(QIcon(':/images/database-import.svg'))
         self.ui.exportDataBaseAction.setIcon(QIcon(':/images/database-export.svg'))
         self.ui.actionExit.setIcon(QIcon(':/images/icons8-exit-50.png'))

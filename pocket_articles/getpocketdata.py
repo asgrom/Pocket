@@ -9,6 +9,31 @@ from . import CONSUMER_KEY, ACCESS_TOKEN
 logger = applogger.get_logger(__name__)
 
 
+# @pyqtSlot()
+# def create_tag_tables(self):
+#     """Создание таблиц tag и webpageTags в базе данных.
+#
+#     Метод используется только если база создается из Pocket сервиса.
+#     Данные берутся с сервиса Pocket."""
+#     pocket_data = get_pocket_data()
+#     articles_lst = pocket_data['list']
+#     cur = self.con.cursor()
+#     try:
+#         for article_data in articles_lst.values():
+#             url = article_data.get('given_url')
+#             tags = article_data.get('tags')
+#             if not tags:
+#                 continue
+#             for tag in tags:
+#                 tag_id = add_tag(tag, cur)
+#                 add_page_tag(url, tag_id, cur)
+#     except Exception:
+#         logger.exception('Ошибка создания таблицы тегов')
+#         QMessageBox.critical(self, 'Ошибка', 'Ошибка создания таблицы тегов')
+#     finally:
+#         cur.execute('commit')
+#         cur.close()
+
 def open_articles_in_browser(data: dict):
     """Открывает страницы из Pocket
 

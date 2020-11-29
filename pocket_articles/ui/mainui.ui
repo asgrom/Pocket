@@ -317,7 +317,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QWebEngineView" name="webView" native="true">
+            <widget class="QWebEngineView" name="webView">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                <horstretch>0</horstretch>
@@ -355,7 +355,6 @@
      <string>Файл</string>
     </property>
     <addaction name="actionNewDB"/>
-    <addaction name="actionNewDBPocket"/>
     <addaction name="actionOpenDbase"/>
     <addaction name="separator"/>
     <addaction name="actionImportHtml"/>
@@ -538,7 +537,7 @@
   <customwidget>
    <class>QWebEngineView</class>
    <extends>QWidget</extends>
-   <header>qwebengineview.h</header>
+   <header location="global">QtWebEngineWidgets/QWebEngineView</header>
   </customwidget>
  </customwidgets>
  <resources>

@@ -1,4 +1,7 @@
 # todo:
+#   УДАЛИТЬ НАХРЕН МЕТОДЫ ИМПОРТА ИЗ ПОКЕТ. НЕ НУЖНЫ ОНИ ЗДЕСЬ. СДЕЛАТЬ ПРОСТО ОТДЕЛЬНЫЙ МЕТОД ДЛЯ ИМПОРТА.
+#   НУЖНЫ ТОЛЬКО МЕТОДЫ ДЛЯ РАБОТЫ С БАЗОЙ И СТАТЬЯМИ. А ИМПОРТЫ ИЗ ПОКЕТА И EVERNOTE СДЕЛАТЬ ОТДЕЛЬНЫМИ
+#   ПАКЕТАМИ ИЛИ МОДУЛЯМИ. МОЖЕТ БЫТЬ ОТДЕЛЬНЫЙ МОДУЛЬ ТИПА IMPORT_SERVICES_HTML
 #   Сделать возможность загрузки.
 #   Сделать импорт тегов, статей тегов
 #   Пересмотреть вызовы логгера
@@ -21,9 +24,8 @@ from PyQt5.QtWidgets import *
 from . import applogger
 from . import dbmethods
 from .articletag import ArticleTag, DeleteArticleTagEvent
-from .dbmethods import (add_tag, add_article, connect, export_articles, SqliteError, add_page_tag)
+from .dbmethods import (add_tag, add_article, connect, export_articles, SqliteError)
 from .getpagedata import get_data_from_page, get_page_text_content
-from .getpocketdata import get_pocket_data
 from .mainwindow import MainWindow
 from .proxystyle import ProxyStyle
 
@@ -43,10 +45,10 @@ def log_uncaught_exceptions(ex_cls, ex, tb):
 sys.excepthook = log_uncaught_exceptions
 
 
-class Window(MainWindow):
+class Pocket(MainWindow):
 
     def __init__(self, parent=None):
-        super(Window, self).__init__(parent)
+        super(Pocket, self).__init__(parent)
         self.connect_slots()
         self.load_data_from_db()
 
@@ -54,7 +56,6 @@ class Window(MainWindow):
         """Подключение слотов"""
         self.ui.exportDataBaseAction.triggered.connect(self.export_db_to_html)
         self.ui.actionImportHtml.triggered.connect(self.import_html)
-        self.ui.actionNewDBPocket.triggered.connect(self.create_new_db)
         self.ui.actionNewDB.triggered.connect(self.create_new_db)
         self.ui.actionOpenDbase.triggered.connect(self.open_other_db)
         self.htmlImportedSignal.connect(self.load_data_from_db)
@@ -136,7 +137,9 @@ class Window(MainWindow):
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
             file, _ = QFileDialog.getSaveFileName(
-                directory=os.path.join(QStandardPaths.writableLocation(QStandardPaths.HomeLocation), 'articletags.json'),
+                directory=os.path.join(
+                    QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
+                    'articletags.json'),
                 filter='json (*.json);;All (*)')
             if not file:
                 return
@@ -593,9 +596,9 @@ class Window(MainWindow):
 
     @pyqtSlot()
     def create_new_db(self):
-        """Создание новой базы данных
+        """Создание новой базы данных.
 
-            При создании базы из сервиса Pocket также будет создана таблица тегов.
+        Если у файла базы не задано расширение, то автоматически добавляется расширение (.db).
         """
         dbase_path, _ = QFileDialog.getSaveFileName(
             self, 'Файл базы данных', QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
@@ -603,20 +606,19 @@ class Window(MainWindow):
         )
         if not dbase_path:
             return
+        if not os.path.splitext(dbase_path)[1]:
+            dbase_path = os.path.splitext(dbase_path)[0] + '.db'
         self.con.close()
         if os.path.exists(dbase_path):
             os.unlink(dbase_path)
         self.con = connect(dbase_path)
 
-        sender = self.sender()
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            self.import_html()
-            if sender is self.ui.actionNewDBPocket:
-                self.create_tag_tables()
             self.ui.statusbar.showMessage('База данных создана')
             logger.info(f'Новая база данных создана {dbase_path}')
             QMessageBox.information(self, 'Готово', 'База данных создана')
+            self.import_html()
         except Exception:
             logger.exception('Exception in create new dbase')
             QMessageBox.critical(self, 'Ошибка', 'Ошибка создания базы данных')
@@ -630,7 +632,9 @@ class Window(MainWindow):
         """Импортирование сохраненных страниц
 
         Импортирует сохраненные HTML страницы из заданной папки"""
-        html_dir = self.get_dir_name()  # диалог с выбором папки
+        html_dir = QFileDialog.getExistingDirectory(
+            self, 'Каталог HTML страниц',
+            QStandardPaths.writableLocation(QStandardPaths.HomeLocation))
         if not html_dir:
             return
         QApplication.setOverrideCursor(Qt.WaitCursor)
@@ -657,31 +661,6 @@ class Window(MainWindow):
         except Exception:
             logger.exception('Exception in get_dir_name')
             return
-
-    @pyqtSlot()
-    def create_tag_tables(self):
-        """Создание таблиц tag и webpageTags в базе данных.
-
-        Метод используется только если база создается из Pocket сервиса.
-        Данные берутся с сервиса Pocket."""
-        pocket_data = get_pocket_data()
-        articles_lst = pocket_data['list']
-        cur = self.con.cursor()
-        try:
-            for article_data in articles_lst.values():
-                url = article_data.get('given_url')
-                tags = article_data.get('tags')
-                if not tags:
-                    continue
-                for tag in tags:
-                    tag_id = add_tag(tag, cur)
-                    add_page_tag(url, tag_id, cur)
-        except Exception:
-            logger.exception('Ошибка создания таблицы тегов')
-            QMessageBox.critical(self, 'Ошибка', 'Ошибка создания таблицы тегов')
-        finally:
-            cur.execute('commit')
-            cur.close()
 
     @pyqtSlot()
     def write_data_webpages_table(self, html_dir):
@@ -774,7 +753,7 @@ def main():
     if fh.open(QIODevice.ReadOnly | QIODevice.Text):
         app.setStyleSheet(QTextStream(fh).readAll())
 
-    w = Window()
+    w = Pocket()
     w.show()
     sys.exit(app.exec_())
 
