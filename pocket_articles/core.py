@@ -1,7 +1,6 @@
 # todo:
 #   Сделать возможность загрузки.
 #   Сделать импорт тегов, статей тегов
-#   Переименовать модули с классами.
 #   Пересмотреть вызовы логгера
 #   Запоминать последнюю открытую статью.
 #   Проверить все методы с записью в базу на rollback.
@@ -134,19 +133,16 @@ class Window(MainWindow):
     @pyqtSlot()
     def export_article_tags(self):
         """Экспорт таблицы webpagetags."""
-        # todo:
-        #   ПЕРЕСМОТРЕТЬ!!!!!!
-        #   сначала получить файл для сохранения или выйти если он не задан, а только потом делать запрос к базе.
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            table_list = dbmethods.export_webpagetags_table(self.con)
-            if not table_list:
-                QMessageBox.information(self, '', 'У статей нет тегов.')
-                return
             file, _ = QFileDialog.getSaveFileName(
                 directory=os.path.join(QStandardPaths.writableLocation(QStandardPaths.HomeLocation), 'articletags.json'),
                 filter='json (*.json);;All (*)')
             if not file:
+                return
+            table_list = dbmethods.export_webpagetags_table(self.con)
+            if not table_list:
+                QMessageBox.information(self, '', 'У статей нет тегов.')
                 return
             if not os.path.splitext(file)[-1]:
                 file = file + '.json'
