@@ -219,17 +219,12 @@ def add_tag(tag, cur: sql.Cursor):
     :param cur:
     :return:
     """
-    # todo:
-    #    ПРОВЕРИТЬ ИСКЛЮЧЕНИЕ. Т.Е. ЕГО ПЕРЕХВАТ
-    try:
-        tag_id = cur.execute('select id from tags where tag = ?', [tag]).fetchone()
-        if tag_id:
-            return tag_id[0]
-        cur.execute('insert into tags (tag) values (?)', [tag])
-        logger.info(f'Add new tag {tag}')
-        return cur.lastrowid
-    except sql.IntegrityError:
-        logger.warning('{}', format(traceback.format_exc()))
+    tag_id = cur.execute('select id from tags where tag = ?', [tag]).fetchone()
+    if tag_id:
+        return tag_id[0]
+    cur.execute('insert into tags (tag) values (?)', [tag])
+    logger.info(f'Add new tag {tag}')
+    return cur.lastrowid
 
 
 def export_articles(folder, cur: sql.Cursor):

@@ -58,13 +58,16 @@ class Pocket(MainWindow):
         self.htmlImportedSignal.connect(self.load_data_from_db)
         self.searchPanel.searched.connect(self.search_on_page)
 
+        # контекстное меню дерева тегов
         self.ui.tagsView.customContextMenuRequested.connect(self.tagViewContextMenuRequested)
         self.deleteTagAction.triggered.connect(self.delete_tag_from_tagView)
 
+        # контекстное меню таблицы статей
         self.ui.articleView.customContextMenuRequested['QPoint'].connect(self.articleViewContextMenuRequested)
         self.deleteArticleAction.triggered.connect(self.delete_article)
         self.exportArticleAction.triggered.connect(self.export_article_to_html)
 
+        # меню сортировки статей
         self.ui.actionSortTitleAsc.triggered.connect(
             lambda _, col='title', order='asc': self.articleTitleModel.changeSortOrder(col, order)
         )
@@ -80,14 +83,18 @@ class Pocket(MainWindow):
 
         # выбор статьи для просмотра
         self.ui.articleView.selectionModel().selectionChanged.connect(self.open_webpage)
+
         # выбор в комбобоксе
         # noinspection PyUnresolvedReferences
         self.tagCBox.activated.connect(self.add_new_tag)
+
         # фильтр в прокси-модели
         self.ui.filterArticleLineEdit.returnPressed.connect(self.set_filter_article_title)
         self.ui.filterArticleLineEdit.returnPressed.connect(self.ui.dbSearch.clear)
+
         # выбор по тегу
         self.tagViewSelectionModel.selectionChanged.connect(self.tag_selected)
+
         # поиск по базе
         self.ui.dbSearch.returnPressed.connect(self.db_search)
         self.ui.dbSearch.returnPressed.connect(self.ui.filterArticleLineEdit.clear)
