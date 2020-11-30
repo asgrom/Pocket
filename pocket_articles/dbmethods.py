@@ -195,6 +195,7 @@ def add_article(title: str, url: str,
                  [webpage_id, title, textContent])
     conn.execute("""insert into html_contents (page_id, html) values (?, ?);""", [webpage_id, htmlContent])
     logger.info(f'Добавлена статья "{title}"')
+    return webpage_id
 
 
 def add_page_tag(url: str, tag_id, cursor: sql.Cursor):
@@ -218,6 +219,8 @@ def add_tag(tag, cur: sql.Cursor):
     :param cur:
     :return:
     """
+    # todo:
+    #    ПРОВЕРИТЬ ИСКЛЮЧЕНИЕ. Т.Е. ЕГО ПЕРЕХВАТ
     try:
         tag_id = cur.execute('select id from tags where tag = ?', [tag]).fetchone()
         if tag_id:

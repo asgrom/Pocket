@@ -46,11 +46,13 @@ def get_data_from_page(page):
     # get page url
     for i in root[0].text.strip().split('\n'):
         i = i.strip()
-        if i.startswith('url'):
-            url = i.split(': ')[-1]
-        elif i.startswith('saved date:'):
-            saved_date = i.strip()
-            saved_date = re.search(r'^.+: ([^G]+) G.+', saved_date)
-            saved_date = dp.parse(saved_date.group(1))
-            saved_date = saved_date.strftime('%Y-%m-%d %H:%M:%S')
+        if i.startswith('info'):
+            url, saved_date = re.findall(r'\((.+?)\)', i)
+        # if i.startswith('url'):
+        #     url = i.split(': ')[-1]
+        # elif i.startswith('saved date:'):
+        #     saved_date = i.strip()
+        #     saved_date = re.search(r'^.+: ([^G]+) G.+', saved_date)
+        #     saved_date = dp.parse(saved_date.group(1))
+        #     saved_date = saved_date.strftime('%Y-%m-%d %H:%M:%S')
     return title, url, saved_date
