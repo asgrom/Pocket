@@ -1,4 +1,5 @@
 # todo:
+#   СДЕЛАТЬ ВОЗМОЖНОСТЬ ПЕРЕИМЕНОВАНИЯ ТЕГОВ В ДЕРЕВЕ ТЕГОВ.
 #   Сделать возможность загрузки.
 #   Сделать импорт тегов, статей тегов
 #   Пересмотреть вызовы логгера
@@ -82,7 +83,7 @@ class Pocket(MainWindow):
         )
 
         # выбор статьи для просмотра
-        self.ui.articleView.selectionModel().selectionChanged.connect(self.open_webpage)
+        self.ui.articleView.doubleClicked.connect(self.open_webpage)
 
         # выбор в комбобоксе
         # noinspection PyUnresolvedReferences
@@ -693,10 +694,11 @@ class Pocket(MainWindow):
             self.con.commit()
         return count
 
-    @pyqtSlot(QItemSelection)
-    def open_webpage(self, selection: QItemSelection):
+    @pyqtSlot(QModelIndex)
+    def open_webpage(self, selection: QModelIndex):
         """Загрузка статьи"""
-        index = self.ui.articleView.currentIndex()
+        index = selection
+        # index = self.ui.articleView.currentIndex()
         if not index.isValid():
             return
         self.ui.webView.findText('')  # сбрасываем поиск текста на странице
