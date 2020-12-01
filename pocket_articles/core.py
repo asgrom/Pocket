@@ -50,6 +50,7 @@ class Pocket(MainWindow):
 
     def __init__(self, parent=None):
         super(Pocket, self).__init__(parent)
+        self._openedArticleID = None
         self.connect_slots()
         self.load_data_from_db()
 
@@ -726,7 +727,7 @@ class Pocket(MainWindow):
             tags = self.con.execute("""select tag from tags where id in
                                     (select id_tag from webpagetags where id_page = ?);""",
                                     [index.data(Qt.UserRole)]).fetchall()
-        except (sql.Error, Exception):  # разделить исключения
+        except Exception:  # разделить исключения
             logger.exception('Exception in open_webpage')
             QMessageBox.critical(self, 'Ошибка открытия статьи', 'Ошибка открытия страницы')
             QApplication.restoreOverrideCursor()
@@ -750,6 +751,7 @@ class Pocket(MainWindow):
         self.ui.webView.load(QUrl.fromLocalFile(self._tmphtmlfile))
         self.ui.pageTitleLabel.setText(index.data())
         self.ui.urlLabel.setText(url)
+        self._openedArticleID = index.data(Qt.UserRole)
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:
@@ -764,6 +766,11 @@ class Pocket(MainWindow):
         parser.read(self.config)
         dbpath = os.path.relpath(self.database, os.path.dirname(__file__))
         parser.set('Database', 'dbase', dbpath)
+        currentTag = self.ui.tagsView.selectionModel().currentIndex().data(Qt.UserRole)
+        parser['LastPosition'] = {
+            'article_id': self._openedArticleID,
+            'tag_id': currentTag
+        }
         with open(self.config, 'w') as fh:
             parser.write(fh)
         event.accept()
