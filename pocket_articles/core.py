@@ -14,6 +14,7 @@ import sqlite3 as sql
 import sys
 import tempfile
 import traceback
+from datetime import datetime as dt
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -314,26 +315,27 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def export_article_to_html(self):
         """Экспорт выделенной статьи в HTML"""
-        article = self.ui.articleView.selectionModel().selection().indexes()[-1]
         folder = self.get_dir_name()
         if not folder:
             return
+        selectedRowsIdx = self.ui.articleView.selectionModel().selectedRows(column=1)
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            content = self.con.execute(
-                """select html from html_contents where page_id=?""", [article.data(Qt.UserRole)]
-            ).fetchone()[-1]
-            fname = re.sub('[/?<>*"|]', '', article.data(Qt.DisplayRole)[:122])
-            fname = re.sub('( ){2,}', ' ', fname)
-            path = os.path.join(folder, fname)
-            with open(path + '.html', 'w') as f:
-                f.write(content)
+            for idx in selectedRowsIdx:
+                content = self.con.execute(
+                    """select html from html_contents where page_id=?""", [idx.data(Qt.UserRole)]
+                ).fetchone()[-1]
+                fname = re.sub('[/?<>*"|]', '', idx.data(Qt.DisplayRole)[:90])
+                fname = re.sub('( ){2,}', ' ', fname) + f'({dt.now()})' + '.html'
+                fpath = os.path.join(folder, fname)
+                with open(fpath, 'w') as f:
+                    f.write(content)
+                logger.info(f'Article imported\n"{idx.data(Qt.DisplayRole)}"\n')
         except Exception:
             logger.exception('Error export article')
             QMessageBox.critical(self, 'Ошибка импорта', f'Ошибка импорта статьи', QMessageBox.Ok)
         else:
-            logger.info(f'Article imported\n{article.data(Qt.DisplayRole)}\n')
-            QMessageBox.information(self, 'Импортирование завершено', 'Импортирование статьи завершено успешно',
+            QMessageBox.information(self, 'Импортирование завершено', 'Импортирование завершено успешно',
                                     QMessageBox.Ok)
         finally:
             QApplication.restoreOverrideCursor()
@@ -602,6 +604,8 @@ class Pocket(MainWindow):
             QApplication.setOverrideCursor(Qt.WaitCursor)
             count = export_articles(folder, self.con.cursor())
         except SqliteError:
+            # todo
+            #   проверить это исключение
             logger.exception('Exception in export_db_to_html')
             QMessageBox.critical(self, 'Ошибка экспорта', 'Ошибка экспорта\nСмотри лог программы')
         else:
