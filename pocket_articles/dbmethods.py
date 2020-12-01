@@ -1,18 +1,14 @@
 """Предоставляет методы для работы с sqlite базой"""
+import os
 import re
 import sqlite3 as sql
 import sys
 import traceback
-import os
-
-from . import applogger
 from datetime import datetime as dt
 
+from . import applogger
+
 logger = applogger.get_logger(__name__)
-
-
-class SqliteError(Exception):
-    pass
 
 
 def close_connection(conn: sql.Connection):

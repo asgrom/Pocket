@@ -1,5 +1,6 @@
 # todo:
 #   СДЕЛАТЬ ВОЗМОЖНОСТЬ ПЕРЕИМЕНОВАНИЯ ТЕГОВ В ДЕРЕВЕ ТЕГОВ.
+#   Сделать возможность импорта html по-выбору.
 #   Сделать возможность загрузки.
 #   Сделать импорт тегов, статей тегов
 #   Пересмотреть вызовы логгера
@@ -24,7 +25,7 @@ from PyQt5.QtWidgets import *
 from . import applogger
 from . import dbmethods
 from .articletag import ArticleTag, DeleteArticleTagEvent
-from .dbmethods import (add_tag, add_article, connect, export_articles, SqliteError)
+from .dbmethods import (add_tag, add_article, connect, export_articles)
 from .getpagedata import get_data_from_page, get_page_text_content
 from .mainwindow import MainWindow
 from .proxystyle import ProxyStyle
