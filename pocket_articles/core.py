@@ -377,17 +377,7 @@ class Pocket(MainWindow):
 
     @pyqtSlot()
     def delete_article(self):
-        """Удаляет статью из базы
-
-        После успешного удаления статьи из базы в ArticleTag, находящихся в articleTagsHBox вызывается метод
-        action_triggered, который вызывает событие DeleteArticleTagEvent. При обработке которого, вызывается метод
-        delete_article_tag, из которого уже вызывается обновление articleTagModel.
-
-        Notes
-        -----
-        Когда удаляем строку текущий индекс меняется!!! Поэтому ModelIndex будет указывать на совершенно другой объект!
-        Данные из индекса нужно взять сразу, или сначала сделать удаление из базы, а потом из модели.
-        """
+        """Удаляет статью из базы"""
         if self.ui.articleView.selectionModel().selection().isEmpty():
             return
         status = QMessageBox.question(self, 'Подтвердить', 'Удалить статью?',
@@ -404,7 +394,10 @@ class Pocket(MainWindow):
                     delete from webcontents where id_page match {0};""".format(idx.data(Qt.UserRole)))
                 logger.info(f'Удалена статья "{idx.data(Qt.DisplayRole)}"')
             self.con.commit()
+
+            # вызываем обновление количество статей с тегами.
             self.update_articleTagModel()
+
             for idx in selectedRowsIdx:
                 self.articleTitleModel.removeRow(idx.row())
             QMessageBox.information(self, '', 'Удаление завершено', QMessageBox.Ok)
