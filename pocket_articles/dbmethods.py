@@ -6,6 +6,7 @@ import traceback
 import os
 
 from . import applogger
+from datetime import datetime as dt
 
 logger = applogger.get_logger(__name__)
 
@@ -222,27 +223,15 @@ def add_tag(tag, cur: sql.Cursor):
 
 def export_articles(folder, cur: sql.Cursor):
     """Экспорт веб-страниц из базы"""
-    import os
     count = 0
-    directory = '/home/alexandr/Загрузки/html/export'
-    folder = folder or directory
-    try:
-        for id_page, title in cur.execute("""select id, title from webpages;""").fetchall():
-            content = cur.execute(
-                """select html from html_contents where page_id=?;""", (id_page,)).fetchone()
-            title = re.sub('[/?<>*"|]', '', title[:122])
-            title = re.sub('( ){2,}', ' ', title)
-            fname = os.path.join(folder, title) + '.html'
-            if os.path.exists(fname):
-                n, _ = os.path.splitext(fname)
-                n = n + '_double'
-                fname = n + '.html'
-            with open(fname, 'w') as f:
-                f.write(content[0])
-                count += 1
-                logger.info(f'Экспортировано "{fname}"')
-    except Exception as e:
-        logger.exception('Exception in export_articles')
-        raise SqliteError(e)
-    finally:
-        return count
+    for id_page, title in cur.execute("""select id, title from webpages;""").fetchall():
+        content = cur.execute(
+            """select html from html_contents where page_id=?;""", (id_page,)).fetchone()
+        title = re.sub('[/?<>*"|]', '', title[:90])
+        title = re.sub('( ){2,}', ' ', title) + f'({dt.now()})' + '.html'
+        fname = os.path.join(folder, title)
+        with open(fname, 'w') as f:
+            f.write(content[0])
+            count += 1
+            logger.info(f'Экспортировано "{fname}"')
+    return count

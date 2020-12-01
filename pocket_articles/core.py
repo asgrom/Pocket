@@ -603,13 +603,11 @@ class Pocket(MainWindow):
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
             count = export_articles(folder, self.con.cursor())
-        except SqliteError:
-            # todo
-            #   проверить это исключение
-            logger.exception('Exception in export_db_to_html')
+        except Exception:
+            logger.exception('Exception in export_db_to_html\n')
             QMessageBox.critical(self, 'Ошибка экспорта', 'Ошибка экспорта\nСмотри лог программы')
         else:
-            QMessageBox.information(self, 'Экспортирование завершено', 'Экспортировано {} статьи'.format(count),
+            QMessageBox.information(self, 'Экспортирование завершено', f'Экспортировано {count} статьи',
                                     QMessageBox.Ok)
         finally:
             QApplication.restoreOverrideCursor()
