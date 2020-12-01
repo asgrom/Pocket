@@ -1,8 +1,9 @@
+import sqlite3
 import typing
 
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot, QDateTime
 from PyQt5.QtWidgets import QApplication, QWidget
-import sqlite3
+
 from . import applogger
 
 logger = applogger.get_logger(__name__)

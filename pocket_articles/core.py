@@ -5,6 +5,7 @@
 #   Пересмотреть вызовы логгера
 #   Запоминать последнюю открытую статью.
 #   Проверить все методы с записью в базу на rollback.
+import configparser
 import hashlib
 import json
 import os
@@ -99,7 +100,10 @@ class Pocket(MainWindow):
         # поиск по базе
         self.ui.dbSearch.returnPressed.connect(self.db_search)
         self.ui.dbSearch.returnPressed.connect(self.ui.filterArticleLineEdit.clear)
+
+        # активируем панель поиска на странице
         QShortcut(QKeySequence.Find, self, self.searchPanel.show)
+
         self.ui.webView.loadFinished.connect(self.highlight_searched_text)
         self.ui.urlToolButton.toggled.connect(self.show_url_label)
         self.ui.urlToolButton.toggled.connect(self.change_urlToolButton_icon)
@@ -108,6 +112,16 @@ class Pocket(MainWindow):
         # экспорт таблицы webpagetags
         self.ui.actionExportArticleTags.triggered.connect(self.export_article_tags)
         self.ui.actionImportTags.triggered.connect(self.import_tags)
+        self.viewSelectionAction.triggered.connect(self.viewSelection)
+
+    @pyqtSlot()
+    def viewSelection(self):
+        selectionModel = self.ui.articleView.selectionModel()
+        selection = selectionModel.selection()
+        selectedIndexes = selectionModel.selectedIndexes()
+        selectedRows = [i.row() for i in selectionModel.selectedRows()]
+        for row in selectedRows:
+            self.articleTitleModel.removeRow(row)
 
     @pyqtSlot()
     def import_tags(self):
@@ -201,7 +215,7 @@ class Pocket(MainWindow):
             self.ui.urlToolButton.setIcon(QIcon(':/images/expand-arrow.png'))
 
     @pyqtSlot()
-    def update_articleTagModel(self, tag=None, tagId=None):
+    def update_articleTagModel(self):
         """Обновление данных в модели отображения тегов статей"""
         all_articles_count = self.con.execute('select count(id) from webpages;').fetchone()[0]
         all_articles_item_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), TagId, 'all_articles', 1,
@@ -289,8 +303,11 @@ class Pocket(MainWindow):
         homedir = QStandardPaths.writableLocation(QStandardPaths.HomeLocation)
         db_path, _ = QFileDialog.getOpenFileName(self, 'Открыть базу данных', homedir,
                                                  "SQLite (*.sqlite *.sqlite3 *.db);;All (*)")
+        if not db_path:
+            return
         self.con.close()
         self.con = connect(db_path)
+        MainWindow.database = db_path
         self.articleTitleModel.setCursor(self.con.cursor())
         self.htmlImportedSignal.emit()
 
@@ -371,25 +388,26 @@ class Pocket(MainWindow):
         Когда удаляем строку текущий индекс меняется!!! Поэтому ModelIndex будет указывать на совершенно другой объект!
         Данные из индекса нужно взять сразу, или сначала сделать удаление из базы, а потом из модели.
         """
+        if self.ui.articleView.selectionModel().selection().isEmpty():
+            return
         status = QMessageBox.question(self, 'Подтвердить', 'Удалить статью?',
                                       QMessageBox.Ok | QMessageBox.Cancel, QMessageBox.Cancel)
         if status == QMessageBox.Cancel:
             return
-        indx = self.ui.articleView.currentIndex()
-        if not indx.isValid():
-            return
-        id_page = indx.data(Qt.UserRole)
+        selectedRowsIdx = self.ui.articleView.selectionModel().selectedRows(column=1)[::-1]
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            self.con.executescript(
-                """begin transaction;
-                delete from webpages where id = {0};
-                delete from webcontents where id_page match {0};""".format(id_page))
+            self.con.execute('begin transaction;')
+            for idx in selectedRowsIdx:
+                self.con.executescript("""
+                    delete from webpages where id = {0};
+                    delete from webcontents where id_page match {0};""".format(idx.data(Qt.UserRole)))
+                logger.info(f'Удалена статья "{idx.data(Qt.DisplayRole)}"')
             self.con.commit()
             self.update_articleTagModel()
-            logger.info(f'Удалена статья "{indx.data(Qt.DisplayRole)}')
-            self.articleTitleModel.removeRow(indx.row())
-            QMessageBox.information(self, 'Завершено', 'Статья удалена', QMessageBox.Ok)
+            for idx in selectedRowsIdx:
+                self.articleTitleModel.removeRow(idx.row())
+            QMessageBox.information(self, '', 'Удаление завершено', QMessageBox.Ok)
         except sql.Error:
             self.con.rollback()
             logger.exception('Exception in delete_article')
@@ -617,6 +635,7 @@ class Pocket(MainWindow):
         if os.path.exists(dbase_path):
             os.unlink(dbase_path)
         self.con = connect(dbase_path)
+        MainWindow.database = dbase_path
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
@@ -717,7 +736,8 @@ class Pocket(MainWindow):
             QApplication.restoreOverrideCursor()
             return
         # удаляем теги из горизонтального лейаута
-        for i in range(self.articleTagsHBox.count() - 1, -1, -1):
+        # for i in range(self.articleTagsHBox.count() - 1, -1, -1):
+        for i in list(range(self.articleTagsHBox.count()))[::-1]:
             item = self.articleTagsHBox.itemAt(i)
             if isinstance(item.widget(), ArticleTag):
                 self.articleTagsHBox.takeAt(i).widget().deleteLater()
@@ -744,6 +764,12 @@ class Pocket(MainWindow):
                 os.unlink(self._tmphtmlfile)
         except OSError:
             logger.exception('Exception in closeEvent unlink self._tmphtmlfile')
+        parser = configparser.ConfigParser()
+        parser.read(self.config)
+        dbpath = os.path.relpath(self.database, os.path.dirname(__file__))
+        parser.set('Database', 'dbase', dbpath)
+        with open(self.config, 'w') as fh:
+            parser.write(fh)
         event.accept()
 
 

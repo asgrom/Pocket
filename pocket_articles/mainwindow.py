@@ -1,12 +1,14 @@
+import configparser
+import os
+
 from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtGui import QStandardItemModel, QPixmap, QIcon
+from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import QWebEngineSettings
-from PyQt5.QtWidgets import (QMainWindow, QHeaderView, QHBoxLayout, QLabel, QSizePolicy, QMenu, QActionGroup,
-                             QAction, QLineEdit)
+from PyQt5.QtWidgets import *
 
 from .dbmethods import connect
-from .mainui import Ui_MainUI
 from .delegate import Delegate
+from .mainui import Ui_MainUI
 from .searchpanel import SearchPanel
 from .tablemodel import TableModel
 from .tagcombobox import TagsComboBox
@@ -18,13 +20,16 @@ class MainWindow(QMainWindow):
     notags_req = """select count(id) from webpages
             where id not in
             (select id_page from webpagetags);"""
+    database = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data/articles.db')
+    config = os.path.join(os.path.dirname(__file__), 'config/config.ini')
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
         self.delegate = Delegate()
+        self.config_parser()
         # создание соединения с базой данных
-        self.con = connect()
+        self.con = connect(self.database)
 
         # список временных файлов, которые при закрытии будут удалятся
         self._tmphtmlfile = None
@@ -36,6 +41,18 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainUI()
         self.ui.setupUi(self)
         self.loadUi()
+
+    def config_parser(self):
+        parser = configparser.ConfigParser()
+        if not os.path.exists(self.config):
+            parser.add_section('Database')
+            parser.set('Database', 'dbase', 'data/articles.db')
+            with open(self.config, 'w') as fh:
+                parser.write(fh)
+        else:
+            parser.read(self.config)
+            dbpath = parser.get('Database', 'dbase')
+            MainWindow.database = os.path.abspath(os.path.join(os.path.dirname(__file__), dbpath))
 
     def loadUi(self):
         """Инициализация основных элементов интерфеса"""
@@ -53,6 +70,8 @@ class MainWindow(QMainWindow):
         self.articleTitleModel.setObjectName('ArticleList')
         self.ui.articleView.setSortingEnabled(False)
         self.ui.articleView.verticalHeader().setVisible(True)
+        self.ui.articleView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.ui.articleView.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.ui.articleView.setModel(self.articleTitleModel)
 
         ################################################################################
@@ -101,6 +120,8 @@ class MainWindow(QMainWindow):
         self.articleViewContextMenu.addAction(self.deleteArticleAction)
         self.exportArticleAction = QAction('Экспорт в HTML')
         self.articleViewContextMenu.addAction(self.exportArticleAction)
+        self.viewSelectionAction = QAction('View selection')
+        self.articleViewContextMenu.addAction(self.viewSelectionAction)
         self.ui.articleView.setContextMenuPolicy(Qt.CustomContextMenu)
 
         ################################################################################

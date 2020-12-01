@@ -1,11 +1,10 @@
 """Предоставляет методы для работы с sqlite базой"""
-import hashlib
 import re
 import sqlite3 as sql
 import sys
 import traceback
+import os
 
-from . import DATABASE
 from . import applogger
 
 logger = applogger.get_logger(__name__)
@@ -21,16 +20,10 @@ def close_connection(conn: sql.Connection):
     sys.exit()
 
 
-def connect(db: str = None) -> sql.Connection:
-    """Создает и возвращает соединение с базой данных
-
-    База данных берется из 'DATABASE'"""
+def connect(db: str) -> sql.Connection:
+    """Создает и возвращает соединение с базой данных"""
     try:
-        if not db:
-            conn = sql.connect(DATABASE)
-        else:
-            conn = sql.connect(db)
-        import os
+        conn = sql.connect(db)
         dirname = os.path.dirname(os.path.realpath(__file__))
         # загрузка расширения для регистронезависимого поиска по базе
         # noinspection PyUnresolvedReferences
