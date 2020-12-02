@@ -4,7 +4,6 @@
 #   Сделать возможность загрузки.
 #   Сделать импорт тегов, статей тегов
 #   Пересмотреть вызовы логгера
-#   Запоминать последнюю открытую статью.
 #   Проверить все методы с записью в базу на rollback.
 import configparser
 import hashlib
@@ -40,7 +39,7 @@ def log_uncaught_exceptions(ex_cls, ex, tb):
     text += ''.join(traceback.format_tb(tb))
     logger.error(text)
     QMessageBox.critical(None, 'Ошибка выполнения', "Возникла ошибка.\nСмотри лог программы.")
-    sys.exit()
+    qApp.exit()
 
 
 sys.excepthook = log_uncaught_exceptions
@@ -50,9 +49,9 @@ class Pocket(MainWindow):
 
     def __init__(self, parent=None):
         super(Pocket, self).__init__(parent)
-        self._openedArticleID = None
         self.connect_slots()
         self.load_data_from_db()
+        self.open_last_article()
 
     def connect_slots(self):
         """Подключение слотов"""
@@ -87,18 +86,18 @@ class Pocket(MainWindow):
         )
 
         # выбор статьи для просмотра
-        self.ui.articleView.doubleClicked.connect(self.open_webpage)
+        self.ui.articleView.activated.connect(self.open_webpage)
 
         # выбор в комбобоксе
         # noinspection PyUnresolvedReferences
         self.tagCBox.activated.connect(self.add_new_tag)
 
-        # фильтр в прокси-модели
+        # фильтр заголовков
         self.ui.filterArticleLineEdit.returnPressed.connect(self.set_filter_article_title)
         self.ui.filterArticleLineEdit.returnPressed.connect(self.ui.dbSearch.clear)
 
         # выбор по тегу
-        self.tagViewSelectionModel.selectionChanged.connect(self.tag_selected)
+        self.tagViewSelectionModel.currentChanged.connect(self.tag_selected)
 
         # поиск по базе
         self.ui.dbSearch.returnPressed.connect(self.db_search)
@@ -115,23 +114,32 @@ class Pocket(MainWindow):
         # экспорт таблицы webpagetags
         self.ui.actionExportArticleTags.triggered.connect(self.export_article_tags)
         self.ui.actionImportTags.triggered.connect(self.import_tags)
-        self.viewSelectionAction.triggered.connect(self.viewSelection)
 
-    @pyqtSlot()
-    def viewSelection(self):
-        selectionModel = self.ui.articleView.selectionModel()
-        selection = selectionModel.selection()
-        selectedIndexes = selectionModel.selectedIndexes()
-        selectedRows = [i.row() for i in selectionModel.selectedRows()]
-        for row in selectedRows:
-            self.articleTitleModel.removeRow(row)
+    def open_last_article(self):
+        if not self._openedArticleID or not self._opendTagID:
+            return
+        loop = QEventLoop()
+        tagIdx = self.tagProxyModel.index(
+            self._opendTagID[0],
+            self._opendTagID[1],
+            self.tagProxyModel.index(self._opendTagID[2], self._opendTagID[3])
+        )
+        self.tagViewSelectionModel.clearSelection()
+        self.tagViewSelectionModel.setCurrentIndex(tagIdx, QItemSelectionModel.Select)
+        QTimer.singleShot(300, loop.exit)
+        loop.exec_()
+        articleIdx = self.articleTitleModel.index(self._openedArticleID[0], 1)
+        self.ui.articleView.setCurrentIndex(articleIdx)
+        self.open_webpage(articleIdx)
 
     @pyqtSlot()
     def import_tags(self):
         # todo:
         #   доделать метод!!!
-        file, _ = QFileDialog.getOpenFileName(directory=QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
-                                              filter='json (*.json);;All (*)')
+        file, _ = QFileDialog.getOpenFileName(
+            directory=QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
+            filter='json (*.json);;All (*)'
+        )
         if not file:
             return
         try:
@@ -426,11 +434,10 @@ class Pocket(MainWindow):
             self.articleTitleModel.changeSqlQuery(query)
         QApplication.restoreOverrideCursor()
 
-    @pyqtSlot(QItemSelection)
-    def tag_selected(self, selection: QItemSelection):
+    @pyqtSlot(QModelIndex)
+    def tag_selected(self, index: QModelIndex):
         self.ui.dbSearch.clear()
         self.ui.filterArticleLineEdit.clear()
-        index = selection.indexes()[0]
         if index.data(Qt.UserRole) == 'all_articles':
             self.articleTitleModel.changeSqlQuery()
             return
@@ -467,8 +474,6 @@ class Pocket(MainWindow):
 
         Если статья уже имеет тег, который задается, то при добавлении в базу присходит исключение - так исключается
         дублирование."""
-        if not self.ui.articleView.currentIndex().isValid():
-            return
         insert_article_tag = """insert into webpagetags (id_page, id_tag) VALUES (?, ?)"""
         cur = self.con.cursor()
         cur.execute('begin transaction;')
@@ -478,7 +483,7 @@ class Pocket(MainWindow):
                 self.tagCBox.setItemData(index, id_tag, Qt.UserRole)
             else:
                 id_tag = self.tagCBox.itemData(index, Qt.UserRole)
-            cur.execute(insert_article_tag, [self.ui.articleView.currentIndex().data(Qt.UserRole), id_tag])
+            cur.execute(insert_article_tag, [self._openedArticleID[1], id_tag])
         except sql.DatabaseError:
             self.con.rollback()
             logger.warning('Ошибка установки тега {}\n{}'.format(self.tagCBox.itemText(index), traceback.format_exc()))
@@ -711,10 +716,8 @@ class Pocket(MainWindow):
         return count
 
     @pyqtSlot(QModelIndex)
-    def open_webpage(self, selection: QModelIndex):
+    def open_webpage(self, index: QModelIndex):
         """Загрузка статьи"""
-        index = selection
-        # index = self.ui.articleView.currentIndex()
         if not index.isValid():
             return
         self.ui.webView.findText('')  # сбрасываем поиск текста на странице
@@ -751,7 +754,9 @@ class Pocket(MainWindow):
         self.ui.webView.load(QUrl.fromLocalFile(self._tmphtmlfile))
         self.ui.pageTitleLabel.setText(index.data())
         self.ui.urlLabel.setText(url)
-        self._openedArticleID = index.data(Qt.UserRole)
+        self._openedArticleID = (index.row(), index.data(Qt.UserRole))
+        idx = self.tagViewSelectionModel.currentIndex()
+        self._opendTagID = (idx.row(), idx.column(), idx.parent().row(), idx.parent().column())
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:
@@ -766,11 +771,11 @@ class Pocket(MainWindow):
         parser.read(self.config)
         dbpath = os.path.relpath(self.database, os.path.dirname(__file__))
         parser.set('Database', 'dbase', dbpath)
-        currentTag = self.ui.tagsView.selectionModel().currentIndex().data(Qt.UserRole)
-        parser['LastPosition'] = {
-            'article_id': self._openedArticleID,
-            'tag_id': currentTag
-        }
+        if self._opendTagID and self._openedArticleID:
+            parser['LastPosition'] = {
+                'article_id': ','.join(map(str, self._openedArticleID)),
+                'tag_id': ','.join(map(str, self._opendTagID)),
+            }
         with open(self.config, 'w') as fh:
             parser.write(fh)
         event.accept()
