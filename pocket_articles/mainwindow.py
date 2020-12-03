@@ -1,7 +1,7 @@
 import configparser
 import os
 
-from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import QWebEngineSettings
 from PyQt5.QtWidgets import *
@@ -22,6 +22,7 @@ class MainWindow(QMainWindow):
             (select id_page from webpagetags);"""
     database = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data/articles.db')
     config = os.path.join(os.path.dirname(__file__), 'config/config.ini')
+    ignoredTags = ['line', 'tags']
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -33,6 +34,10 @@ class MainWindow(QMainWindow):
         self._openedArticleID = ''
         # тег в tagView открытой статьи tupe(row, column, parent.row, parent.column)
         self._opendTagID = ''
+        # текст в строке поиска по базе
+        self._searchText = ''
+        # текст в строке фильтра по названию
+        self._filterText = ''
 
         self.config_parser()
         # создание соединения с базой данных
@@ -63,6 +68,8 @@ class MainWindow(QMainWindow):
             self._opendTagID = parser.get('LastPosition', 'tag_id', fallback='')
             if self._opendTagID:
                 self._opendTagID = tuple(map(int, self._opendTagID.split(',')))
+            self._searchText = parser.get('LastPosition', 'search_text', fallback='')
+            self._filterText = parser.get('LastPosition', 'filter_text', fallback='')
 
     def loadUi(self):
         """Инициализация основных элементов интерфеса"""

@@ -1,7 +1,7 @@
 import sqlite3
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot, QDateTime
+from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QApplication, QWidget
 
 from . import applogger
@@ -11,8 +11,9 @@ logger = applogger.get_logger(__name__)
 
 class TableModel(QAbstractTableModel):
     query = """select time_saved, title, id from webpages order by lower({}) {} limit ? offset ?"""
+    dataFetched = pyqtSignal()  # сигнал - данные получены из базы
 
-    def __init__(self, cursor: sqlite3.Cursor, number_rows=100, parent: QWidget = None):
+    def __init__(self, cursor: sqlite3.Cursor, number_rows=400, parent: QWidget = None):
         """
         Args:
             cursor (sqlite3.Cursor): Соединение с базой данных.
@@ -129,6 +130,7 @@ class TableModel(QAbstractTableModel):
         self.dbData.extend(self.chunkData)
         self._offset += len(self.chunkData)
         self.endInsertRows()
+        self.dataFetched.emit()
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """
