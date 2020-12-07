@@ -11,7 +11,6 @@ logger = applogger.get_logger(__name__)
 
 class TableModel(QAbstractTableModel):
     query = """select time_saved, title, id from webpages order by lower({}) {} limit ? offset ?"""
-    dataFetched = pyqtSignal()  # сигнал - данные получены из базы
 
     def __init__(self, cursor: sqlite3.Cursor, number_rows=200, parent: QWidget = None):
         """
@@ -36,6 +35,7 @@ class TableModel(QAbstractTableModel):
         self.chunkData.clear()
         self.dbData.clear()
         self._offset = 0
+        self.query = TableModel.query
         self.endResetModel()
 
     @pyqtSlot(sqlite3.Cursor)
@@ -130,7 +130,6 @@ class TableModel(QAbstractTableModel):
         self.dbData.extend(self.chunkData)
         self._offset += len(self.chunkData)
         self.endInsertRows()
-        self.dataFetched.emit()
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """

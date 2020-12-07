@@ -8,6 +8,8 @@
 #   5. Сделать импорт тегов, статей тегов
 #   6. Пересмотреть вызовы логгера
 #   7. Проверить все методы с записью в базу на rollback.
+#   8. ВОЗМОЖНО ВЫНЕСТИ ВСЕ SQL-ЗАПРОСЫ В МОДУЛЬ РАБОТЫ С БАЗОЙ.
+#       МОЖЕТ БЫТЬ СДЕЛАТЬ VIEW В БАЗЕ ДАННЫХ?
 import configparser
 import hashlib
 import json
@@ -54,8 +56,6 @@ class Pocket(MainWindow):
         super(Pocket, self).__init__(parent)
         self.connect_slots()
         self.load_data_from_db()
-        # self.test()
-        self.open_last_article()
 
     def connect_slots(self):
         """Подключение слотов"""
@@ -105,7 +105,6 @@ class Pocket(MainWindow):
         self.ui.tagsView.activated.connect(self.tag_selected)
 
         # поиск по базе
-        self.ui.dbSearch.returnPressed.connect(self.set_first_tag_as_current)
         self.ui.dbSearch.returnPressed.connect(self.db_search)
         self.ui.dbSearch.returnPressed.connect(self.ui.filterArticleLineEdit.clear)
 
@@ -120,69 +119,6 @@ class Pocket(MainWindow):
         # экспорт таблицы webpagetags
         self.ui.actionExportArticleTags.triggered.connect(self.export_article_tags)
         self.ui.actionImportTags.triggered.connect(self.import_tags)
-
-    def set_first_tag_as_current(self):
-        """Устанавливаем в дереве тегов первый тег как текущий."""
-        self.ui.tagsView.setCurrentIndex(self.tagProxyModel.index(0, 0))
-
-    def test(self):
-        # self.ui.filterArticleLineEdit.setText(self._filterText)
-        # self.ui.filterArticleLineEdit.returnPressed.emit()
-        # self.articleTitleModel.dataFetched.disconnect()
-        print('test')
-        print(self.articleTitleModel.rowCount())
-        i = self.articleTitleModel.number_rows - 1
-        idx = self.articleTitleModel.index(698, 1)
-        if self.articleTitleModel.rowCount() <= 698:
-            # idx_ = self.articleTitleModel.index(i, 1)
-            self.ui.articleView.setCurrentIndex(self.articleTitleModel.index(self.articleTitleModel.rowCount() - 1, 1))
-            self.ui.articleView.scrollTo(self.articleTitleModel.index(self.articleTitleModel.rowCount() - 1, 1))
-        else:
-            self.articleTitleModel.dataFetched.disconnect()
-            # self.ui.articleView.setCurrentIndex(idx)
-            # self.ui.articleView.scrollTo(idx)
-
-    def open_last_article(self):
-        """Открываем последнюю открытую статью.
-
-        Если нет сохраненных данных о посдней открытой статье прерываем.
-        Если есть сохраненные поиск или фильтр, устанавливаем их. Иначе
-        устанавливаем только тег в дереве тегов. Статья выбирается только
-        тогда, когда получен сигнал из TableView о том, что данные из базы
-        обновлены.
-        """
-        if not self._openedArticleID or not self._opendTagID:
-            return
-
-        def selectArticle():
-            """Устанавливаем статью текущей.
-
-            Метод вызывается когда TableView сгенерирует (dataFetched) сигнал
-            о том, что новые данные из базы получены. Затем обработчик сигнала
-            отключается."""
-            self.articleTitleModel.dataFetched.disconnect()
-            articleIdx = self.articleTitleModel.index(self._openedArticleID[0], 1)
-            self.ui.articleView.setCurrentIndex(articleIdx)
-            self.ui.articleView.scrollTo(articleIdx)
-            self.open_webpage(articleIdx)
-
-        self.articleTitleModel.dataFetched.connect(selectArticle)
-
-        if not self._searchText and not self._filterText:
-            tagIdx = self.tagProxyModel.index(
-                self._opendTagID[0],
-                self._opendTagID[1],
-                self.tagProxyModel.index(self._opendTagID[2], self._opendTagID[3])
-            )
-            self.ui.tagsView.setCurrentIndex(tagIdx)
-            self.ui.tagsView.scrollTo(tagIdx)
-            self.ui.tagsView.activated.emit(tagIdx)
-        elif self._searchText:
-            self.ui.dbSearch.setText(self._searchText)
-            self.ui.dbSearch.returnPressed.emit()
-        elif self._filterText:
-            self.ui.filterArticleLineEdit.setText(self._filterText)
-            self.ui.filterArticleLineEdit.returnPressed.emit()
 
     @pyqtSlot()
     def import_tags(self):
@@ -810,11 +746,6 @@ class Pocket(MainWindow):
         self.ui.webView.load(QUrl.fromLocalFile(self._tmphtmlfile))
         self.ui.pageTitleLabel.setText(index.data())
         self.ui.urlLabel.setText(url)
-        self._openedArticleID = (index.row(), index.data(Qt.UserRole))
-        idx = self.ui.tagsView.currentIndex()
-        self._opendTagID = (idx.row(), idx.column(), idx.parent().row(), idx.parent().column())
-        self._searchText = self.ui.dbSearch.text()
-        self._filterText = self.ui.filterArticleLineEdit.text()
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:
@@ -825,7 +756,6 @@ class Pocket(MainWindow):
                 os.unlink(self._tmphtmlfile)
         except OSError:
             logger.exception('Exception in closeEvent unlink self._tmphtmlfile')
-        self.save_status()
         event.accept()
 
     def save_status(self):
@@ -833,13 +763,6 @@ class Pocket(MainWindow):
         parser.read(self.config)
         dbpath = os.path.relpath(self.database, os.path.dirname(__file__))
         parser.set('Database', 'dbase', dbpath)
-        if self._opendTagID and self._openedArticleID:
-            parser['LastPosition'] = {
-                'article_id': ','.join(map(str, self._openedArticleID)),
-                'tag_id': ','.join(map(str, self._opendTagID)),
-                'search_text': self._searchText,
-                'filter_text': self._filterText
-            }
         with open(self.config, 'w') as fh:
             parser.write(fh)
 

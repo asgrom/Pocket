@@ -30,14 +30,6 @@ class MainWindow(QMainWindow):
         self.delegate = Delegate()
         # временный HTML файл
         self._tmphtmlfile = None
-        # last opened artile tuple(строка в таблице, id в базе)
-        self._openedArticleID = ''
-        # тег в tagView открытой статьи tupe(row, column, parent.row, parent.column)
-        self._opendTagID = ''
-        # текст в строке поиска по базе
-        self._searchText = ''
-        # текст в строке фильтра по названию
-        self._filterText = ''
 
         self.config_parser()
         # создание соединения с базой данных
@@ -62,14 +54,6 @@ class MainWindow(QMainWindow):
             parser.read(self.config)
             dbpath = parser.get('Database', 'dbase')
             MainWindow.database = os.path.abspath(os.path.join(os.path.dirname(__file__), dbpath))
-            self._openedArticleID = parser.get('LastPosition', 'article_id', fallback='')
-            if self._openedArticleID:
-                self._openedArticleID = tuple(map(int, self._openedArticleID.split(',')))
-            self._opendTagID = parser.get('LastPosition', 'tag_id', fallback='')
-            if self._opendTagID:
-                self._opendTagID = tuple(map(int, self._opendTagID.split(',')))
-            self._searchText = parser.get('LastPosition', 'search_text', fallback='')
-            self._filterText = parser.get('LastPosition', 'filter_text', fallback='')
 
     def loadUi(self):
         """Инициализация основных элементов интерфеса"""
