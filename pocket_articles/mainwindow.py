@@ -17,9 +17,12 @@ from .treeviewproxymodel import TreeViewProxyModel
 
 class MainWindow(QMainWindow):
     htmlImportedSignal = pyqtSignal()
-    notags_req = """select count(id) from webpages
-            where id not in
-            (select id_page from webpagetags);"""
+
+    notags_req = """
+        select count(id) from webpages
+        where id not in
+        (select id_page from webpagetags);"""
+
     database = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data/articles.db')
     config = os.path.join(os.path.dirname(__file__), 'config/config.ini')
     ignoredTags = ['line', 'tags']
