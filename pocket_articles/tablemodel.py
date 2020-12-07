@@ -13,7 +13,7 @@ class TableModel(QAbstractTableModel):
     query = """select time_saved, title, id from webpages order by lower({}) {} limit ? offset ?"""
     dataFetched = pyqtSignal()  # сигнал - данные получены из базы
 
-    def __init__(self, cursor: sqlite3.Cursor, number_rows=400, parent: QWidget = None):
+    def __init__(self, cursor: sqlite3.Cursor, number_rows=200, parent: QWidget = None):
         """
         Args:
             cursor (sqlite3.Cursor): Соединение с базой данных.

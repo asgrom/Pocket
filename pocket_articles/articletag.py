@@ -4,7 +4,10 @@ from PyQt5.QtWidgets import QLineEdit, QSizePolicy
 
 _QSS = """
     QLineEdit {
-        background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgb(215,215,215), stop:1 beige);
+        background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 rgba(166, 166, 166, 0.2),
+        stop:0.5 rgba(166, 166, 166, 0.0),
+        stop:1 rgba(166, 166, 166, 0.2));
         border-radius: 10px;
         border-style: inset;
         border-width: 1px;

@@ -1,10 +1,13 @@
 # todo:
-#   СДЕЛАТЬ ВОЗМОЖНОСТЬ ПЕРЕИМЕНОВАНИЯ ТЕГОВ В ДЕРЕВЕ ТЕГОВ.
-#   Сделать возможность импорта html по-выбору.
-#   Сделать возможность загрузки.
-#   Сделать импорт тегов, статей тегов
-#   Пересмотреть вызовы логгера
-#   Проверить все методы с записью в базу на rollback.
+#   1. ПРИ ОТКРЫТИИ ДРУГОЙ БАЗЫ СБРАСЫВАТЬ ДАННЫЕ О ПОСЛЕДНЕЙ
+#   ОТКРЫТОЙ СТАТЬЕ.
+#   1.1 ДОбАВИТЬ ВОЗМОЖНОСТЬ ОТКРЫТИЯ HTML В ОТДЕЛЬНОМ ОКНЕ.
+#   2. СДЕЛАТЬ ВОЗМОЖНОСТЬ ПЕРЕИМЕНОВАНИЯ ТЕГОВ В ДЕРЕВЕ ТЕГОВ.
+#   3. Сделать возможность импорта html по-выбору.
+#   4. Сделать возможность загрузки.
+#   5. Сделать импорт тегов, статей тегов
+#   6. Пересмотреть вызовы логгера
+#   7. Проверить все методы с записью в базу на rollback.
 import configparser
 import hashlib
 import json
@@ -51,6 +54,7 @@ class Pocket(MainWindow):
         super(Pocket, self).__init__(parent)
         self.connect_slots()
         self.load_data_from_db()
+        # self.test()
         self.open_last_article()
 
     def connect_slots(self):
@@ -122,8 +126,21 @@ class Pocket(MainWindow):
         self.ui.tagsView.setCurrentIndex(self.tagProxyModel.index(0, 0))
 
     def test(self):
-        self.ui.filterArticleLineEdit.setText(self._filterText)
-        self.ui.filterArticleLineEdit.returnPressed.emit()
+        # self.ui.filterArticleLineEdit.setText(self._filterText)
+        # self.ui.filterArticleLineEdit.returnPressed.emit()
+        # self.articleTitleModel.dataFetched.disconnect()
+        print('test')
+        print(self.articleTitleModel.rowCount())
+        i = self.articleTitleModel.number_rows - 1
+        idx = self.articleTitleModel.index(698, 1)
+        if self.articleTitleModel.rowCount() <= 698:
+            # idx_ = self.articleTitleModel.index(i, 1)
+            self.ui.articleView.setCurrentIndex(self.articleTitleModel.index(self.articleTitleModel.rowCount() - 1, 1))
+            self.ui.articleView.scrollTo(self.articleTitleModel.index(self.articleTitleModel.rowCount() - 1, 1))
+        else:
+            self.articleTitleModel.dataFetched.disconnect()
+            # self.ui.articleView.setCurrentIndex(idx)
+            # self.ui.articleView.scrollTo(idx)
 
     def open_last_article(self):
         """Открываем последнюю открытую статью.
@@ -473,20 +490,21 @@ class Pocket(MainWindow):
     def tag_selected(self, index: QModelIndex):
         self.ui.dbSearch.clear()
         self.ui.filterArticleLineEdit.clear()
-        if index.data(TagId) == 'all_articles':
+        tagID = index.data(TagId)
+        if tagID == 'all_articles':
             self.articleTitleModel.changeSqlQuery()
             return
-        if index.data(TagId) == 'notags':
+        if tagID == 'notags':
             query = ("""select time_saved, title, id
                     from webpages
                     where id not in
                     (select id_page from webpagetags group by id_page)
                      order by lower({}) {} limit ? offset ?;""")
-        elif index.data(TagId) not in MainWindow.ignoredTags:
+        elif tagID not in MainWindow.ignoredTags:
             query = ' '.join([
                 """select time_saved, title, webpages.id
                 from webpages inner join webpagetags w on webpages.id = w.id_page
-                where w.id_tag = {} """.format(index.data(Qt.UserRole)),
+                where w.id_tag = {} """.format(tagID),
                 """order by lower({}) {} limit ? offset ?;"""])
         else:
             return
