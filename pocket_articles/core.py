@@ -318,7 +318,7 @@ class Pocket(MainWindow):
             QApplication.setOverrideCursor(Qt.WaitCursor)
             for idx in selectedRowsIdx:
                 content = self.con.execute(
-                    """select html from html_contents where page_id=?""", [idx.data(ID)]
+                    """select html from html_contents where id_page=?""", [idx.data(ID)]
                 ).fetchone()[-1]
                 fname = re.sub('[/?<>*"|]', '', idx.data(Qt.DisplayRole)[:90])
                 fname = re.sub('( ){2,}', ' ', fname) + f'({dt.now()})' + '.html'
@@ -388,7 +388,7 @@ class Pocket(MainWindow):
             for idx in selectedRowsIdx:
                 self.con.executescript("""
                     delete from webpages where id = {0};
-                    delete from webcontents where id_page match {0};""".format(idx.data(ID)))
+                    delete from search_table where id_page match {0};""".format(idx.data(ID)))
                 logger.info(f'Удалена статья "{idx.data(Qt.DisplayRole)}"')
             self.con.commit()
 
@@ -414,7 +414,7 @@ class Pocket(MainWindow):
         else:
             query = ' '.join([
                 """select time_saved, webpages.title, id from webpages
-                join webcontents on id=id_page where webcontents.content match '{}' """.format(txt),
+                join search_table on id=id_page where search_table.content match '{}' """.format(txt),
                 """order by rank limit ? offset ?;"""])
             self.articleTitleModel.changeSqlQuery(query)
         QApplication.restoreOverrideCursor()
@@ -451,8 +451,8 @@ class Pocket(MainWindow):
             return
         sql_request = ' '.join([
             """select time_saved, webpages.title, id from webpages join
-            webcontents on id=id_page
-            where webcontents.title match '{}'""".format(self.ui.filterArticleLineEdit.text()),
+            search_table on id=id_page
+            where search_table.title match '{}'""".format(self.ui.filterArticleLineEdit.text()),
             """order by rank limit ? offset ?"""])
         self.articleTitleModel.changeSqlQuery(sql_request)
 
@@ -462,6 +462,8 @@ class Pocket(MainWindow):
 
         Если статья уже имеет тег, который задается, то при добавлении в базу присходит исключение - так исключается
         дублирование."""
+        if not self._currentOpenedPageID:
+            return
         insert_article_tag = """insert into webpagetags (id_page, id_tag) VALUES (?, ?)"""
         cur = self.con.cursor()
         cur.execute('begin transaction;')
@@ -471,7 +473,7 @@ class Pocket(MainWindow):
                 self.tagCBox.setItemData(index, id_tag, ID)
             else:
                 id_tag = self.tagCBox.itemData(index, ID)
-            cur.execute(insert_article_tag, [self._openedArticleID[1], id_tag])
+            cur.execute(insert_article_tag, [self._currentOpenedPageID, id_tag])
         except sql.DatabaseError:
             self.con.rollback()
             logger.warning('Ошибка установки тега {}\n{}'.format(self.tagCBox.itemText(index), traceback.format_exc()))
@@ -714,7 +716,7 @@ class Pocket(MainWindow):
         try:
             url = self.con.execute("""select url from webpages where id=?""",
                                    [index.data(ID)]).fetchone()[0]
-            html = self.con.execute("""select html from html_contents where page_id=?""",
+            html = self.con.execute("""select html from html_contents where id_page=?""",
                                     [index.data(ID)]).fetchone()[0]
             tags = self.con.execute("""select tag from tags where id in
                                     (select id_tag from webpagetags where id_page = ?);""",
@@ -743,6 +745,7 @@ class Pocket(MainWindow):
         self.ui.webView.load(QUrl.fromLocalFile(self._tmphtmlfile))
         self.ui.pageTitleLabel.setText(index.data())
         self.ui.urlLabel.setText(url)
+        self._currentOpenedPageID = index.data(ID)
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:

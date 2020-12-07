@@ -30,6 +30,8 @@ class MainWindow(QMainWindow):
         self.delegate = Delegate()
         # временный HTML файл
         self._tmphtmlfile = None
+        # текущая открытая статья ID
+        self._currentOpenedPageID = None
 
         self.config_parser()
         # создание соединения с базой данных

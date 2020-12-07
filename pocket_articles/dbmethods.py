@@ -75,7 +75,8 @@ def drop_tables(connector: sql.Connection):
             drop table if exists webpages;
             drop table if exists tags;
             drop table if exists webpagetags;
-            drop table if exists webcontents;
+            drop table if exists search_table;
+            drop table if exists html_contents;
             commit;
             pragma foreign_keys=on;
             """
@@ -116,12 +117,12 @@ def create_tables(connector: sql.Connection):
                     on update cascade on delete cascade
                 );
                 create table if not exists "html_contents"(
-                    "page_id"	INTEGER NOT NULL UNIQUE,
+                    "id_page"	INTEGER NOT NULL UNIQUE,
                     "html"	TEXT NOT NULL,
-                    constraint fk_page_id FOREIGN KEY("page_id") REFERENCES "webpages"("id")
+                    constraint fk_page_id FOREIGN KEY("id_page") REFERENCES "webpages"("id")
                     on update cascade on delete cascade
                     );
-                create virtual table if not exists 'webcontents' using FTS5('id_page' unindexed, 'title', 'content');
+                create virtual table if not exists 'search_table' using FTS5('id_page', 'title', 'content');
                 """)
     except sql.Error:
         logger.exception('Ошибка создания таблиц в базе данных')
@@ -181,9 +182,9 @@ def add_article(title: str, url: str,
         """
         insert into webpages (title, url, time_saved, hash) values (?, ?, ?, ?);""",
         [title, url, time_saved, hash_]).lastrowid
-    conn.execute("""insert into webcontents (id_page, title, content) values (?, ?, ?)""",
+    conn.execute("""insert into search_table (id_page, title, content) values (?, ?, ?)""",
                  [webpage_id, title, textContent])
-    conn.execute("""insert into html_contents (page_id, html) values (?, ?);""", [webpage_id, htmlContent])
+    conn.execute("""insert into html_contents (id_page, html) values (?, ?);""", [webpage_id, htmlContent])
     logger.info(f'Добавлена статья "{title}"')
     return webpage_id
 
@@ -222,7 +223,7 @@ def export_articles(folder, cur: sql.Cursor):
     count = 0
     for id_page, title in cur.execute("""select id, title from webpages;""").fetchall():
         content = cur.execute(
-            """select html from html_contents where page_id=?;""", (id_page,)).fetchone()
+            """select html from html_contents where id_page=?;""", (id_page,)).fetchone()
         title = re.sub('[/?<>*"|]', '', title[:90])
         title = re.sub('( ){2,}', ' ', title) + f'({dt.now()})' + '.html'
         fname = os.path.join(folder, title)
