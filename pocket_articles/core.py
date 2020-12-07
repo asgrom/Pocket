@@ -1,6 +1,4 @@
 # todo:
-#   1. ПРИ ОТКРЫТИИ ДРУГОЙ БАЗЫ СБРАСЫВАТЬ ДАННЫЕ О ПОСЛЕДНЕЙ
-#   ОТКРЫТОЙ СТАТЬЕ.
 #   1.1 ДОбАВИТЬ ВОЗМОЖНОСТЬ ОТКРЫТИЯ HTML В ОТДЕЛЬНОМ ОКНЕ.
 #   2. СДЕЛАТЬ ВОЗМОЖНОСТЬ ПЕРЕИМЕНОВАНИЯ ТЕГОВ В ДЕРЕВЕ ТЕГОВ.
 #   3. Сделать возможность импорта html по-выбору.
@@ -36,7 +34,7 @@ from .proxystyle import ProxyStyle
 
 logger = applogger.get_logger(__name__)
 
-TagId, Count = Qt.UserRole, Qt.UserRole + 1
+ID, Count = Qt.UserRole, Qt.UserRole + 1
 
 
 def log_uncaught_exceptions(ex_cls, ex, tb):
@@ -216,14 +214,14 @@ class Pocket(MainWindow):
     def update_articleTagModel(self):
         """Обновление данных в модели отображения тегов статей"""
         all_articles_count = self.con.execute('select count(id) from webpages;').fetchone()[0]
-        all_articles_item_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), TagId, 'all_articles', 1,
+        all_articles_item_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), ID, 'all_articles', 1,
                                                            Qt.MatchExactly)[0]
         if all_articles_item_idx.data(Count) != all_articles_count:
             self.articleTagModel.itemFromIndex(all_articles_item_idx).setData(all_articles_count, Count)
 
         notags_count = self.con.execute(self.notags_req).fetchone()
         notags_count = 0 if not notags_count else notags_count[0]
-        notags_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), TagId, 'notags', 1,
+        notags_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), ID, 'notags', 1,
                                                 Qt.MatchExactly)[0]
         if notags_idx.data(Count) != notags_count:
             self.articleTagModel.itemFromIndex(notags_idx).setData(notags_count, Count)
@@ -236,16 +234,16 @@ class Pocket(MainWindow):
         if favorites_idx.data(Count) != favorites_count:
             self.articleTagModel.setData(favorites_idx, favorites_count, Count)
 
-        tags_item_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), TagId, 'tags', 1,
+        tags_item_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), ID, 'tags', 1,
                                                    Qt.MatchExactly)[0]
         for tag, id_ in self.con.execute('select tag, id from tags'):
-            tag_item_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), TagId, id_, 1,
+            tag_item_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), ID, id_, 1,
                                                       Qt.MatchExactly | Qt.MatchRecursive)
             count = self.con.execute('select count(id_page) from webpagetags where id_tag=?', [id_]).fetchone()
             count = 0 if not count else count[0]
             if not tag_item_idx:
                 item = QStandardItem(tag)
-                item.setData(id_, TagId)
+                item.setData(id_, ID)
                 item.setData(count, Count)
                 self.articleTagModel.itemFromIndex(tags_item_idx).appendRow([item])
             elif tag_item_idx[0].data(Count) != count:
@@ -261,7 +259,7 @@ class Pocket(MainWindow):
             return
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
-            self.con.execute('delete from tags where id = ?', [index.data(TagId)])
+            self.con.execute('delete from tags where id = ?', [index.data(ID)])
             self.con.commit()
             logger.info(f'Удален тег {index.data(Qt.DisplayRole)}')
             modelIndex = self.tagProxyModel.mapToSource(index)
@@ -320,7 +318,7 @@ class Pocket(MainWindow):
             QApplication.setOverrideCursor(Qt.WaitCursor)
             for idx in selectedRowsIdx:
                 content = self.con.execute(
-                    """select html from html_contents where page_id=?""", [idx.data(Qt.UserRole)]
+                    """select html from html_contents where page_id=?""", [idx.data(ID)]
                 ).fetchone()[-1]
                 fname = re.sub('[/?<>*"|]', '', idx.data(Qt.DisplayRole)[:90])
                 fname = re.sub('( ){2,}', ' ', fname) + f'({dt.now()})' + '.html'
@@ -345,7 +343,7 @@ class Pocket(MainWindow):
         cur_index = self.ui.articleView.currentIndex()
         sql_request = """delete from webpagetags where id_page=? and id_tag=(select id from tags where tag = ?)"""
         try:
-            self.con.execute(sql_request, [cur_index.data(Qt.UserRole), tag])
+            self.con.execute(sql_request, [cur_index.data(ID), tag])
             self.con.commit()
             self.update_articleTagModel()
         except sql.Error:
@@ -390,7 +388,7 @@ class Pocket(MainWindow):
             for idx in selectedRowsIdx:
                 self.con.executescript("""
                     delete from webpages where id = {0};
-                    delete from webcontents where id_page match {0};""".format(idx.data(Qt.UserRole)))
+                    delete from webcontents where id_page match {0};""".format(idx.data(ID)))
                 logger.info(f'Удалена статья "{idx.data(Qt.DisplayRole)}"')
             self.con.commit()
 
@@ -425,7 +423,7 @@ class Pocket(MainWindow):
     def tag_selected(self, index: QModelIndex):
         self.ui.dbSearch.clear()
         self.ui.filterArticleLineEdit.clear()
-        tagID = index.data(TagId)
+        tagID = index.data(ID)
         if tagID == 'all_articles':
             self.articleTitleModel.changeSqlQuery()
             return
@@ -468,11 +466,11 @@ class Pocket(MainWindow):
         cur = self.con.cursor()
         cur.execute('begin transaction;')
         try:
-            if not self.tagCBox.itemData(index, Qt.UserRole):
+            if not self.tagCBox.itemData(index, ID):
                 id_tag = add_tag(self.tagCBox.itemText(index), cur)
-                self.tagCBox.setItemData(index, id_tag, Qt.UserRole)
+                self.tagCBox.setItemData(index, id_tag, ID)
             else:
-                id_tag = self.tagCBox.itemData(index, Qt.UserRole)
+                id_tag = self.tagCBox.itemData(index, ID)
             cur.execute(insert_article_tag, [self._openedArticleID[1], id_tag])
         except sql.DatabaseError:
             self.con.rollback()
@@ -493,7 +491,7 @@ class Pocket(MainWindow):
         cur = self.con.cursor()
         for tag in cur.execute("""select id, tag from tags order by lower(tag);"""):
             item = QStandardItem(tag[1])
-            item.setData(tag[0], Qt.UserRole)
+            item.setData(tag[0], ID)
             self.tagCBoxModel.appendRow(item)
         self.tagCBox.setCurrentIndex(-1)
 
@@ -510,7 +508,7 @@ class Pocket(MainWindow):
     def create_line_item(self):
         """Создает QStandardItem с изображением линии."""
         line = QStandardItem()
-        line.setData('line', Qt.UserRole)
+        line.setData('line', ID)
         line.setFlags(Qt.NoItemFlags)
         return line
 
@@ -523,7 +521,7 @@ class Pocket(MainWindow):
             self.con.commit()
         else:
             favorites_id = favorites_id[0]
-        favorites.setData(favorites_id, TagId)
+        favorites.setData(favorites_id, ID)
         favorites.setData(0, Count)
         favorites.setEditable(False)
         return favorites
@@ -532,13 +530,13 @@ class Pocket(MainWindow):
         """Создает QStandardItem с тегами."""
         tags = QStandardItem('Теги')
         tags.setFlags(Qt.NoItemFlags)
-        tags.setData('tags', TagId)
+        tags.setData('tags', ID)
         for tag, _id in self.con.execute('select tag, id from tags;'):
             if _id == favorites_id:
                 continue
             item = QStandardItem('{0}'.format(tag))
             item.setData(0, Count)
-            item.setData(_id, TagId)
+            item.setData(_id, ID)
             tags.appendRow(item)
         return tags
 
@@ -547,7 +545,7 @@ class Pocket(MainWindow):
         notags_count = self.con.execute(self.notags_req).fetchone()
         notags_count = 0 if not notags_count else notags_count[0]
         notags = QStandardItem(f'Без тегов')
-        notags.setData('notags', TagId)
+        notags.setData('notags', ID)
         notags.setData(notags_count, Count)
         notags.setEditable(False)
         return notags
@@ -560,7 +558,7 @@ class Pocket(MainWindow):
             """).fetchone()
         article_count = 0 if not article_count else article_count[0]
         all_articles = QStandardItem('Все статьи')
-        all_articles.setData('all_articles', TagId)
+        all_articles.setData('all_articles', ID)
         all_articles.setData(article_count, Count)
         all_articles.setEditable(False)
         return all_articles
@@ -571,7 +569,7 @@ class Pocket(MainWindow):
         self.articleTagModel.clear()
         line = self.create_line_item()
         favorites = self.create_favorites_item()
-        tags = self.create_tags_item(favorites.data(TagId))
+        tags = self.create_tags_item(favorites.data(ID))
         notags = self.create_notags_item()
         all_articles = self.create_all_articles_item()
 
@@ -586,7 +584,7 @@ class Pocket(MainWindow):
                 select count(tags.id), tags.id
                 from tags join webpageTags on tags.id = webpageTags.id_tag
                 group by tags.id;"""):
-            tag_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), TagId, _id, 1,
+            tag_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), ID, _id, 1,
                                                  Qt.MatchExactly | Qt.MatchRecursive)[0]
             if tag_idx.data(Count) != count:
                 self.articleTagModel.setData(tag_idx, count, Count)
@@ -715,12 +713,12 @@ class Pocket(MainWindow):
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             url = self.con.execute("""select url from webpages where id=?""",
-                                   [index.data(Qt.UserRole)]).fetchone()[0]
+                                   [index.data(ID)]).fetchone()[0]
             html = self.con.execute("""select html from html_contents where page_id=?""",
-                                    [index.data(Qt.UserRole)]).fetchone()[0]
+                                    [index.data(ID)]).fetchone()[0]
             tags = self.con.execute("""select tag from tags where id in
                                     (select id_tag from webpagetags where id_page = ?);""",
-                                    [index.data(Qt.UserRole)]).fetchall()
+                                    [index.data(ID)]).fetchall()
         except Exception:  # разделить исключения
             logger.exception('Exception in open_webpage')
             QMessageBox.critical(self, 'Ошибка открытия статьи', 'Ошибка открытия страницы')
