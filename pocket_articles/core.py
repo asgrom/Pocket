@@ -217,14 +217,14 @@ class Pocket(MainWindow):
         all_articles_item_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), ID, 'all_articles', 1,
                                                            Qt.MatchExactly)[0]
         if all_articles_item_idx.data(Count) != all_articles_count:
-            self.articleTagModel.itemFromIndex(all_articles_item_idx).setData(all_articles_count, Count)
+            self.articleTagModel.setData(all_articles_item_idx, all_articles_count, Count)
 
         notags_count = self.con.execute(self.notags_req).fetchone()
         notags_count = 0 if not notags_count else notags_count[0]
         notags_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), ID, 'notags', 1,
                                                 Qt.MatchExactly)[0]
         if notags_idx.data(Count) != notags_count:
-            self.articleTagModel.itemFromIndex(notags_idx).setData(notags_count, Count)
+            self.articleTagModel.setData(notags_idx, notags_count, Count)
 
         favorites_count = self.con.execute('select count(id_page) from webpagetags '
                                            'where id_tag='
