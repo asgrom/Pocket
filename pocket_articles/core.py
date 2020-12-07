@@ -97,7 +97,6 @@ class Pocket(MainWindow):
         self.tagCBox.activated.connect(self.add_new_tag)
 
         # фильтр заголовков
-        self.ui.filterArticleLineEdit.returnPressed.connect(self.set_first_tag_as_current)
         self.ui.filterArticleLineEdit.returnPressed.connect(self.set_filter_article_title)
         self.ui.filterArticleLineEdit.returnPressed.connect(self.ui.dbSearch.clear)
 
@@ -756,6 +755,7 @@ class Pocket(MainWindow):
                 os.unlink(self._tmphtmlfile)
         except OSError:
             logger.exception('Exception in closeEvent unlink self._tmphtmlfile')
+        self.save_status()
         event.accept()
 
     def save_status(self):
