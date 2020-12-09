@@ -12,7 +12,7 @@ logger = applogger.get_logger(__name__)
 class TableModel(QAbstractTableModel):
     query = """select time_saved, title, id from webpages order by lower({}) {} limit ? offset ?"""
 
-    def __init__(self, cursor: sqlite3.Cursor, number_rows=200, parent: QWidget = None):
+    def __init__(self, cursor: sqlite3.Cursor, number_rows=100, parent: QWidget = None):
         """
         Args:
             cursor (sqlite3.Cursor): Соединение с базой данных.
@@ -101,6 +101,15 @@ class TableModel(QAbstractTableModel):
             else:
                 return QApplication.palette().alternateBase()
         return
+
+    def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
+        if row >= self.rowCount(parent):
+            while row >= self.rowCount(parent):
+                if self.canFetchMore(parent):
+                    self.fetchMore(parent)
+                else:
+                    break
+        return super().index(row, column, parent)
 
     def canFetchMore(self, parent: QModelIndex) -> bool:
         """

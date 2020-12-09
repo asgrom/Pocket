@@ -1,4 +1,6 @@
 # todo:
+#   ПРИ ФИЛЬТРЕ ИЛИ ПОИСКЕ УбИРАТЬ ВЫДЕЛЕНИЕ В treeView
+#   ОТКРЫВАТЬ ПОСЛЕДНЮЮ СТАТЬЮ ПО СОХРАННЕНОМУ АТРИБУТУ _currentOpenedPageID?
 #   1.1 ДОбАВИТЬ ВОЗМОЖНОСТЬ ОТКРЫТИЯ HTML В ОТДЕЛЬНОМ ОКНЕ.
 #   2. СДЕЛАТЬ ВОЗМОЖНОСТЬ ПЕРЕИМЕНОВАНИЯ ТЕГОВ В ДЕРЕВЕ ТЕГОВ.
 #   3. Сделать возможность импорта html по-выбору.
@@ -54,6 +56,7 @@ class Pocket(MainWindow):
         super(Pocket, self).__init__(parent)
         self.connect_slots()
         self.load_data_from_db()
+        self.loadLastOpenedPage()
 
     def connect_slots(self):
         """Подключение слотов"""
@@ -99,7 +102,7 @@ class Pocket(MainWindow):
         self.ui.filterArticleLineEdit.returnPressed.connect(self.ui.dbSearch.clear)
 
         # выбор по тегу
-        self.tagViewSelectionModel.currentChanged.connect(self.tag_selected)
+        self.ui.tagsView.clicked.connect(self.tag_selected)
 
         # поиск по базе
         self.ui.dbSearch.returnPressed.connect(self.db_search)
@@ -116,6 +119,20 @@ class Pocket(MainWindow):
         # экспорт таблицы webpagetags
         self.ui.actionExportArticleTags.triggered.connect(self.export_article_tags)
         self.ui.actionImportTags.triggered.connect(self.import_tags)
+
+    def loadLastOpenedPage(self):
+        if self._currentOpenedPageID is None or self._currentOpenedTagID is None:
+            return
+        pageIdx = self.ui.articleView.model().index(self._currentOpenedPageID, 1)
+        tagIdx = self.ui.tagsView.model().index(
+            self._currentOpenedTagID[0], self._currentOpenedTagID[1],
+            self.ui.tagsView.model().index(self._currentOpenedTagID[2], self._currentOpenedTagID[-1])
+        )
+        self.ui.tagsView.setCurrentIndex(tagIdx)
+        self.ui.tagsView.clicked.emit(tagIdx)
+        self.ui.articleView.setCurrentIndex(pageIdx)
+        self.ui.articleView.scrollTo(pageIdx)
+        self.ui.articleView.activated.emit(pageIdx)
 
     @pyqtSlot()
     def import_tags(self):
@@ -449,6 +466,13 @@ class Pocket(MainWindow):
 
     @pyqtSlot(QModelIndex)
     def tag_selected(self, index: QModelIndex):
+        """Открываем статьи с выбранным тегом в дереве дегов."""
+        # todo
+        #    проверку индекса на валидность.
+        if not index.isValid():
+            return
+        self._currentOpenedPageID = None
+        self._currentOpenedTagID = None
         self.ui.dbSearch.clear()
         self.ui.filterArticleLineEdit.clear()
         tagID = index.data(ID)
@@ -777,7 +801,12 @@ class Pocket(MainWindow):
         self.ui.webView.load(QUrl.fromLocalFile(self._tmphtmlfile))
         self.ui.pageTitleLabel.setText(index.data())
         self.ui.urlLabel.setText(url)
-        self._currentOpenedPageID = index.data(ID)
+        self._currentOpenedPageID = index.row()
+        curTagviewIdx = self.ui.tagsView.currentIndex()
+        self._currentOpenedTagID = (
+            curTagviewIdx.row(), curTagviewIdx.column(),
+            curTagviewIdx.parent().row(), curTagviewIdx.parent().column()
+        )
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:
@@ -789,13 +818,22 @@ class Pocket(MainWindow):
         except OSError:
             logger.exception('Exception in closeEvent unlink self._tmphtmlfile')
         self.save_status()
+        action = self.sortGroup.checkedAction()
+        print(self.sortGroup.actions())
+        print(action.data())
+        print(action.text())
         event.accept()
 
     def save_status(self):
-        parser = configparser.ConfigParser()
-        parser.read(self.config)
+        parser = configparser.ConfigParser(allow_no_value=True)
+        parser.add_section('Database')
+        parser.add_section('LastOpenedArticle')
         dbpath = os.path.relpath(self.database, os.path.dirname(__file__))
         parser.set('Database', 'dbase', dbpath)
+        if self._currentOpenedPageID is not None:
+            parser.set('LastOpenedArticle', 'article_id', str(self._currentOpenedPageID))
+        if self._currentOpenedTagID is not None:
+            parser.set('LastOpenedArticle', 'tag_id', ','.join(map(str, self._currentOpenedTagID)))
         with open(self.config, 'w') as fh:
             parser.write(fh)
 

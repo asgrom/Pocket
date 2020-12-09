@@ -35,6 +35,7 @@ class MainWindow(QMainWindow):
         self._tmphtmlfile = None
         # текущая открытая статья ID
         self._currentOpenedPageID = None
+        self._currentOpenedTagID = None
 
         self.config_parser()
         # создание соединения с базой данных
@@ -49,15 +50,16 @@ class MainWindow(QMainWindow):
         self.loadUi()
 
     def config_parser(self):
-        parser = configparser.ConfigParser()
-        if not os.path.exists(self.config):
-            parser.add_section('Database')
-            parser.set('Database', 'dbase', 'data/articles.db')
-            with open(self.config, 'w') as fh:
-                parser.write(fh)
-        else:
+        if os.path.exists(self.config):
+            parser = configparser.ConfigParser(allow_no_value=True)
             parser.read(self.config)
             dbpath = parser.get('Database', 'dbase')
+            self._currentOpenedPageID = parser.get('LastOpenedArticle', 'article_id', fallback=None)
+            if self._currentOpenedPageID is not None:
+                self._currentOpenedPageID = int(self._currentOpenedPageID)
+            self._currentOpenedTagID = parser.get('LastOpenedArticle', 'tag_id', fallback=None)
+            if self._currentOpenedTagID is not None:
+                self._currentOpenedTagID = tuple(map(int, self._currentOpenedTagID.split(',')))
             MainWindow.database = os.path.abspath(os.path.join(os.path.dirname(__file__), dbpath))
 
     def loadUi(self):

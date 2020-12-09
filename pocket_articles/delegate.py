@@ -20,7 +20,7 @@ class Delegate(QStyledItemDelegate):
                                rect.width() - 5, self.pixmap.height(), self.pixmap)
             return
 
-        # если элемент выделен делаем жирный шрифт
+        # уменьшаем ширину выделения
         if option.state & QStyle.State_Selected:
             option.rect.setWidth(option.rect.width() - 5)
 
