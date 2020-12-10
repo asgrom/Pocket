@@ -1,7 +1,6 @@
 # todo:
-#   ПРИ ФИЛЬТРЕ ИЛИ ПОИСКЕ УбИРАТЬ ВЫДЕЛЕНИЕ В treeView
-#   СОХРАНЯТЬ И ЗАГРУЖАТЬ ТЕКУЩЕЕ СОСТОЯНИЕ В СЛОВАРЬ?
-#   ОТКРЫВАТЬ ПОСЛЕДНЮЮ СТАТЬЮ ПО СОХРАННЕНОМУ АТРИБУТУ _currentOpenedPageID?
+#   ДОБАВИТЬ ВОЗМОЖНОСТЬ РЕДАКТИРОВАНИЯ НАЗВАНИЯ СТАТЕЙ.
+#
 #   1.1 ДОбАВИТЬ ВОЗМОЖНОСТЬ ОТКРЫТИЯ HTML В ОТДЕЛЬНОМ ОКНЕ.
 #   2. СДЕЛАТЬ ВОЗМОЖНОСТЬ ПЕРЕИМЕНОВАНИЯ ТЕГОВ В ДЕРЕВЕ ТЕГОВ.
 #   3. Сделать возможность импорта html по-выбору.
@@ -11,6 +10,7 @@
 #   7. Проверить все методы с записью в базу на rollback.
 #   8. ВОЗМОЖНО ВЫНЕСТИ ВСЕ SQL-ЗАПРОСЫ В МОДУЛЬ РАБОТЫ С БАЗОЙ.
 #       МОЖЕТ БЫТЬ СДЕЛАТЬ VIEW В БАЗЕ ДАННЫХ?
+
 import hashlib
 import json
 import os
@@ -477,6 +477,7 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def db_search(self):
         txt = self.ui.dbSearch.text()
+        # устанавливаем текущий курсор на первый индекс тегов.
         self.ui.tagsView.setCurrentIndex(
             self.ui.tagsView.model().index(0, 0)
         )
@@ -522,6 +523,7 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def set_filter_article_title(self):
         """Устанавливает фильтр к статьям"""
+        # устанавливаем текущим курсором первый индекс тегов.
         self.ui.tagsView.setCurrentIndex(
             self.ui.tagsView.model().index(0, 0)
         )
