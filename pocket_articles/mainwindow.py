@@ -36,6 +36,8 @@ class MainWindow(QMainWindow):
         self._currentOpenedPageID = None
         self._currentOpenedTagID = None
         self._currentSortOrder = None
+        self._filterText = None
+        self._searchText = None
 
         self.config_parser()
         # создание соединения с базой данных
@@ -62,6 +64,8 @@ class MainWindow(QMainWindow):
             self._currentSortOrder = statusDict.get('sortOrder')
             self._currentOpenedTagID = statusDict.get('tagID')
             self._currentOpenedPageID = statusDict.get('articleID')
+            self._filterText = statusDict.get('filter')
+            self._searchText = statusDict.get('search')
 
     def loadUi(self):
         """Инициализация основных элементов интерфеса"""

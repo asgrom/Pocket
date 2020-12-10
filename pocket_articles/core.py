@@ -104,6 +104,7 @@ class Pocket(MainWindow):
 
         # выбор по тегу
         self.ui.tagsView.clicked.connect(self.tag_selected)
+        self.ui.tagsView.clicked.connect(self.resetCurrentState)
 
         # поиск по базе
         self.ui.dbSearch.returnPressed.connect(self.db_search)
@@ -121,25 +122,43 @@ class Pocket(MainWindow):
         self.ui.actionExportArticleTags.triggered.connect(self.export_article_tags)
         self.ui.actionImportTags.triggered.connect(self.import_tags)
 
+    def resetCurrentState(self):
+        self._currentOpenedPageID = None
+        self._currentOpenedTagID = None
+        self._filterText = None
+        self._searchText = None
+        self.ui.dbSearch.clear()
+        self.ui.filterArticleLineEdit.clear()
+        self._currentSortOrder = None
+
     def loadLastOpenedPage(self):
+        if self._currentOpenedPageID is None or self._currentOpenedTagID is None:
+            return
         if self._currentSortOrder:
             for act in self.sortGroup.actions():
                 if act.objectName() == self._currentSortOrder:
                     act.setChecked(True)
                     act.triggered.emit()
                     break
-        if self._currentOpenedPageID is None or self._currentOpenedTagID is None:
-            return
-        pageIdx = self.ui.articleView.model().index(self._currentOpenedPageID, 1)
-        tagIdx = self.ui.tagsView.model().index(
-            self._currentOpenedTagID[0], self._currentOpenedTagID[1],
-            self.ui.tagsView.model().index(self._currentOpenedTagID[2], self._currentOpenedTagID[-1])
-        )
-        self.ui.tagsView.setCurrentIndex(tagIdx)
-        self.ui.tagsView.clicked.emit(tagIdx)
-        self.ui.articleView.setCurrentIndex(pageIdx)
-        self.ui.articleView.scrollTo(pageIdx)
-        self.ui.articleView.activated.emit(pageIdx)
+        if self._searchText or self._filterText:
+            if self._filterText:
+                self.ui.filterArticleLineEdit.setText(self._filterText)
+                self.ui.filterArticleLineEdit.returnPressed.emit()
+            elif self._searchText:
+                self.ui.dbSearch.setText(self._searchText)
+                self.ui.dbSearch.returnPressed.emit()
+        else:
+            tagIdx = self.ui.tagsView.model().index(
+                self._currentOpenedTagID[0], self._currentOpenedTagID[1],
+                self.ui.tagsView.model().index(self._currentOpenedTagID[2], self._currentOpenedTagID[-1])
+            )
+            self.ui.tagsView.setCurrentIndex(tagIdx)
+            self.tag_selected(tagIdx)
+        pageIdx = self.ui.articleView.model().index(self._currentOpenedPageID[0], 1)
+        if pageIdx.isValid():
+            self.ui.articleView.setCurrentIndex(pageIdx)
+            self.ui.articleView.scrollTo(pageIdx)
+            self.open_webpage(pageIdx)
 
     @pyqtSlot()
     def import_tags(self):
@@ -442,7 +461,7 @@ class Pocket(MainWindow):
                 logger.info(f'Удалена статья "{idx.data(Qt.DisplayRole)}"')
             self.con.commit()
 
-            # вызываем обновление количество статей с тегами.
+            # вызываем обновление количества статей с тегами.
             self.update_articleTagModel()
 
             for idx in selectedRowsIdx:
@@ -479,10 +498,6 @@ class Pocket(MainWindow):
         """Открываем статьи с выбранным тегом в дереве дегов."""
         if not index.isValid():
             return
-        self._currentOpenedPageID = None
-        self._currentOpenedTagID = None
-        self.ui.dbSearch.clear()
-        self.ui.filterArticleLineEdit.clear()
         tagID = index.data(ID)
         if tagID == 'all_articles':
             self.articleTitleModel.changeSqlQuery()
@@ -539,7 +554,7 @@ class Pocket(MainWindow):
                 self.tagCBox.setItemData(index, id_tag, ID)
             else:
                 id_tag = self.tagCBox.itemData(index, ID)
-            cur.execute(insert_article_tag, [self._currentOpenedPageID, id_tag])
+            cur.execute(insert_article_tag, [self._currentOpenedPageID[1], id_tag])
         except sql.DatabaseError:
             self.con.rollback()
             logger.warning('Ошибка установки тега {}\n{}'.format(
@@ -569,7 +584,7 @@ class Pocket(MainWindow):
         """Зазрузка заголовков и тегов статей"""
         try:
             self.create_articleTagModel()
-            self.ui.tagsView.setCurrentIndex(self.tagProxyModel.index(0, 0))
+            self.ui.tagsView.setCurrentIndex(self.ui.tagsView.model().index(0, 0))
             self.create_cbx_model()
         except Exception:
             logger.exception('Exception in load_data_from_db')
@@ -812,13 +827,15 @@ class Pocket(MainWindow):
         self.ui.webView.load(QUrl.fromLocalFile(self._tmphtmlfile))
         self.ui.pageTitleLabel.setText(index.data())
         self.ui.urlLabel.setText(url)
-        self._currentOpenedPageID = index.row()
+        self._currentOpenedPageID = (index.row(), index.data(ID))
         curTagviewIdx = self.ui.tagsView.currentIndex()
         self._currentOpenedTagID = (
             curTagviewIdx.row(), curTagviewIdx.column(),
             curTagviewIdx.parent().row(), curTagviewIdx.parent().column()
         )
         self._currentSortOrder = self.sortGroup.checkedAction().objectName()
+        self._filterText = self.ui.filterArticleLineEdit.text()
+        self._searchText = self.ui.dbSearch.text()
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:
@@ -838,7 +855,9 @@ class Pocket(MainWindow):
             dbase=dbpath,
             articleID=self._currentOpenedPageID,
             tagID=self._currentOpenedTagID,
-            sortOrder=self._currentSortOrder
+            sortOrder=self._currentSortOrder,
+            filter=self._filterText,
+            search=self._searchText
         )
         with open(self.configFile, 'w') as fh:
             json.dump(statusDict, fh, ensure_ascii=False, indent=4)
