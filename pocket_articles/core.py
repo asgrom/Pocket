@@ -10,7 +10,6 @@
 #   7. Проверить все методы с записью в базу на rollback.
 #   8. ВОЗМОЖНО ВЫНЕСТИ ВСЕ SQL-ЗАПРОСЫ В МОДУЛЬ РАБОТЫ С БАЗОЙ.
 #       МОЖЕТ БЫТЬ СДЕЛАТЬ VIEW В БАЗЕ ДАННЫХ?
-import configparser
 import hashlib
 import json
 import os
@@ -39,6 +38,7 @@ logger = applogger.get_logger(__name__)
 ID, COUNT = Qt.UserRole, Qt.UserRole + 1
 
 
+# noinspection PyTypeChecker
 def log_uncaught_exceptions(ex_cls, ex, tb):
     text = 'Uncaught exception\n{}: {}:\n'.format(ex_cls.__name__, ex)
     text += ''.join(traceback.format_tb(tb))
@@ -121,6 +121,12 @@ class Pocket(MainWindow):
         self.ui.actionImportTags.triggered.connect(self.import_tags)
 
     def loadLastOpenedPage(self):
+        if self._currentSortOrder:
+            for act in self.sortGroup.actions():
+                if act.objectName() == self._currentSortOrder:
+                    act.setChecked(True)
+                    act.triggered.emit()
+                    break
         if self._currentOpenedPageID is None or self._currentOpenedTagID is None:
             return
         pageIdx = self.ui.articleView.model().index(self._currentOpenedPageID, 1)
@@ -348,7 +354,7 @@ class Pocket(MainWindow):
             return
         self.con.close()
         self.con = connect(db_path)
-        MainWindow.database = db_path
+        self.database = db_path
         self.articleTitleModel.setCursor(self.con.cursor())
         self.htmlImportedSignal.emit()
 
@@ -684,7 +690,7 @@ class Pocket(MainWindow):
         if os.path.exists(dbase_path):
             os.unlink(dbase_path)
         self.con = connect(dbase_path)
-        MainWindow.database = dbase_path
+        self.database = dbase_path
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
@@ -807,6 +813,7 @@ class Pocket(MainWindow):
             curTagviewIdx.row(), curTagviewIdx.column(),
             curTagviewIdx.parent().row(), curTagviewIdx.parent().column()
         )
+        self._currentSortOrder = self.sortGroup.checkedAction().objectName()
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:
@@ -818,24 +825,18 @@ class Pocket(MainWindow):
         except OSError:
             logger.exception('Exception in closeEvent unlink self._tmphtmlfile')
         self.save_status()
-        action = self.sortGroup.checkedAction()
-        print(self.sortGroup.actions())
-        print(action.data())
-        print(action.text())
         event.accept()
 
     def save_status(self):
-        parser = configparser.ConfigParser(allow_no_value=True)
-        parser.add_section('Database')
-        parser.add_section('LastOpenedArticle')
         dbpath = os.path.relpath(self.database, os.path.dirname(__file__))
-        parser.set('Database', 'dbase', dbpath)
-        if self._currentOpenedPageID is not None:
-            parser.set('LastOpenedArticle', 'article_id', str(self._currentOpenedPageID))
-        if self._currentOpenedTagID is not None:
-            parser.set('LastOpenedArticle', 'tag_id', ','.join(map(str, self._currentOpenedTagID)))
-        with open(self.config, 'w') as fh:
-            parser.write(fh)
+        statusDict = dict(
+            dbase=dbpath,
+            articleID=self._currentOpenedPageID,
+            tagID=self._currentOpenedTagID,
+            sortOrder=self._currentSortOrder
+        )
+        with open(self.configFile, 'w') as fh:
+            json.dump(statusDict, fh, ensure_ascii=False, indent=4)
 
 
 def main():

@@ -33,7 +33,7 @@ def connect(db: str) -> sql.Connection:
         create_tables(conn)
         return conn
     except sql.Error:
-        logger.exception('Exception in connect to dbase')
+        logger.exception(f'Exception in connect to dbase\nDatabase file: {db}')
         sys.exit()
 
 

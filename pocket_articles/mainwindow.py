@@ -1,4 +1,4 @@
-import configparser
+import json
 import os
 
 from PyQt5.QtCore import *
@@ -24,18 +24,18 @@ class MainWindow(QMainWindow):
         (select id_page from webpagetags);"""
 
     database = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data/articles.db')
-    config = os.path.join(os.path.dirname(__file__), 'config/config.ini')
+    configFile = os.path.join(os.path.dirname(__file__), 'config/config.json')
     ignoredTags = ['line', 'tags']
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
-        self.delegate = Delegate()
         # временный HTML файл
         self._tmphtmlfile = None
         # текущая открытая статья ID
         self._currentOpenedPageID = None
         self._currentOpenedTagID = None
+        self._currentSortOrder = None
 
         self.config_parser()
         # создание соединения с базой данных
@@ -50,17 +50,18 @@ class MainWindow(QMainWindow):
         self.loadUi()
 
     def config_parser(self):
-        if os.path.exists(self.config):
-            parser = configparser.ConfigParser(allow_no_value=True)
-            parser.read(self.config)
-            dbpath = parser.get('Database', 'dbase')
-            self._currentOpenedPageID = parser.get('LastOpenedArticle', 'article_id', fallback=None)
-            if self._currentOpenedPageID is not None:
-                self._currentOpenedPageID = int(self._currentOpenedPageID)
-            self._currentOpenedTagID = parser.get('LastOpenedArticle', 'tag_id', fallback=None)
-            if self._currentOpenedTagID is not None:
-                self._currentOpenedTagID = tuple(map(int, self._currentOpenedTagID.split(',')))
-            MainWindow.database = os.path.abspath(os.path.join(os.path.dirname(__file__), dbpath))
+        if os.path.exists(self.configFile):
+            with open(self.configFile) as fh:
+                statusDict = json.load(fh)
+            if statusDict.get('dbase') is not None:
+                self.database = os.path.abspath(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        statusDict.get('dbase'))
+                )
+            self._currentSortOrder = statusDict.get('sortOrder')
+            self._currentOpenedTagID = statusDict.get('tagID')
+            self._currentOpenedPageID = statusDict.get('articleID')
 
     def loadUi(self):
         """Инициализация основных элементов интерфеса"""
@@ -86,7 +87,7 @@ class MainWindow(QMainWindow):
         # отображение списка тегов статей
         ################################################################################
         self.articleTagModel = QStandardItemModel()
-        self.ui.tagsView.setItemDelegate(self.delegate)
+        self.ui.tagsView.setItemDelegate(Delegate())
         self.ui.tagsView.header().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.ui.tagsView.setHeaderHidden(True)
         self.ui.tagsView.setSortingEnabled(True)
