@@ -1,5 +1,6 @@
 # todo:
 #   ПРИ ФИЛЬТРЕ ИЛИ ПОИСКЕ УбИРАТЬ ВЫДЕЛЕНИЕ В treeView
+#   СОХРАНЯТЬ И ЗАГРУЖАТЬ ТЕКУЩЕЕ СОСТОЯНИЕ В СЛОВАРЬ?
 #   ОТКРЫВАТЬ ПОСЛЕДНЮЮ СТАТЬЮ ПО СОХРАННЕНОМУ АТРИБУТУ _currentOpenedPageID?
 #   1.1 ДОбАВИТЬ ВОЗМОЖНОСТЬ ОТКРЫТИЯ HTML В ОТДЕЛЬНОМ ОКНЕ.
 #   2. СДЕЛАТЬ ВОЗМОЖНОСТЬ ПЕРЕИМЕНОВАНИЯ ТЕГОВ В ДЕРЕВЕ ТЕГОВ.
@@ -457,6 +458,9 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def db_search(self):
         txt = self.ui.dbSearch.text()
+        self.ui.tagsView.setCurrentIndex(
+            self.ui.tagsView.model().index(0, 0)
+        )
         QApplication.setOverrideCursor(Qt.WaitCursor)
         if not txt:
             self.articleTitleModel.changeSqlQuery()
@@ -473,8 +477,6 @@ class Pocket(MainWindow):
     @pyqtSlot(QModelIndex)
     def tag_selected(self, index: QModelIndex):
         """Открываем статьи с выбранным тегом в дереве дегов."""
-        # todo
-        #    проверку индекса на валидность.
         if not index.isValid():
             return
         self._currentOpenedPageID = None
@@ -505,6 +507,9 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def set_filter_article_title(self):
         """Устанавливает фильтр к статьям"""
+        self.ui.tagsView.setCurrentIndex(
+            self.ui.tagsView.model().index(0, 0)
+        )
         if not self.ui.filterArticleLineEdit.text():
             self.articleTitleModel.changeSqlQuery()
             return
