@@ -68,7 +68,8 @@ QTreeView::branch:selected:adjoins-item {
   }
 
 QTreeView::item:selected {
-    color: black;
+    /* color: black; */
+    color: rgb(63, 63, 63);
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
     background-color: qlineargradient(x1:0,
@@ -80,15 +81,24 @@ QTreeView::item:selected {
     stop: 1 rgba(255, 170, 80, 1));
 }
 
-QTableView {
-    selection-background-color: qlineargradient(x1:0,
-    y1: 0,
-    x2: 0,
-    y2: 1,
-    stop: 0 rgba(255, 170, 80, 0.3),
-    stop: 0.5 rgba(255, 170, 80, 0.6),
-    stop: 1 rgba(255, 170, 80, 1));
+/*QTableView {*/
+/*    selection-background-color: qlineargradient(x1:0,*/
+/*    y1: 0,*/
+/*    x2: 0,*/
+/*    y2: 1,*/
+/*    stop: 0 rgba(255, 170, 80, 0.3),*/
+/*    stop: 0.5 rgba(255, 170, 80, 0.6),*/
+/*    stop: 1 rgba(255, 170, 80, 1));*/
 
+/*    color: rgb(63, 63, 63);*/
+/*    border: 1px inset rgba(200, 200, 200, 1);*/
+/*    border-top-left-radius: 5px;*/
+/*    border-top-right-radius: 5px;*/
+/*    padding: 0 0px 0 0px;*/
+/*}*/
+
+QTableView {
+    selection-background-color: red;
     color: rgb(63, 63, 63);
     border: 1px inset rgba(200, 200, 200, 1);
     border-top-left-radius: 5px;

@@ -37,7 +37,7 @@ _QSS = """
 class TagsComboBox(QComboBox):
     """Комбобокс со списком тегов"""
 
-    defaultText = 'Add article tag'
+    defaultText = 'Add tag'
 
     def __init__(self, parent=None):
         """

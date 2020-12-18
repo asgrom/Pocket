@@ -47,11 +47,12 @@ class SearchPanel(QWidget):
             parent:
         """
         super(SearchPanel, self).__init__(parent)
+        self.setContentsMargins(0, 0, 0, 0)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.setStyleSheet(_QSS)
 
         hbox = QHBoxLayout(self)
-        hbox.setContentsMargins(0, 0, 0, 0)
+        hbox.setContentsMargins(0, 0, 0, 1)
 
         icon_close = QIcon(':/images/close-circle.svg')
         icon_back = QIcon(':/images/iconfinder_old-edit-undo_23492.png')

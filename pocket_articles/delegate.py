@@ -15,9 +15,17 @@ class Delegate(QStyledItemDelegate):
     def paint(self, painter: QPainter, option: 'QStyleOptionViewItem', index: QModelIndex) -> None:
         if index.data(Qt.UserRole) == 'line':
             rect = option.rect
-            rect.setX(0)
-            painter.drawPixmap(rect.x(), rect.y() + (rect.height() - self.pixmap.height()) // 2,
-                               rect.width() - 5, self.pixmap.height(), self.pixmap)
+            dx = 5
+            pen = QPen()
+            pen.setWidthF(0.5)
+            pen.setColor(QColor(63, 63, 63))
+            painter.setPen(pen)
+            painter.drawLine(QLineF(
+                    dx,
+                    rect.y() + rect.height() / 2,
+                    rect.width() + rect.x() - dx,
+                    rect.y() + rect.height() / 2
+                    ))
             return
 
         # уменьшаем ширину выделения
@@ -28,10 +36,11 @@ class Delegate(QStyledItemDelegate):
         if index.data(Qt.UserRole + 1) is not None:
             fm = option.fontMetrics
             rect = option.rect
-            painter.save()
-            painter.drawText(15 + rect.x() + fm.width(index.data(Qt.DisplayRole)), rect.y(),
-                             rect.width() - 15 - fm.width(index.data(Qt.DisplayRole)), rect.height(),
-                             int(Qt.AlignLeft | Qt.AlignVCenter), f'({index.data(Qt.UserRole + 1)})')
-            painter.restore()
+            painter.drawText(rect.x() + fm.width(index.data(Qt.DisplayRole) + '    '), rect.y(),
+                             fm.width(f'({index.data(Qt.UserRole + 1)})'), rect.height(),
+                             Qt.AlignLeft | Qt.AlignVCenter, f'({index.data(Qt.UserRole + 1)})')
+            # painter.drawText(15 + rect.x() + fm.width(index.data(Qt.DisplayRole)), rect.y(),
+            #                  rect.width() - 15 - fm.width(index.data(Qt.DisplayRole)), rect.height(),
+            #                  int(Qt.AlignLeft | Qt.AlignVCenter), f'({index.data(Qt.UserRole + 1)})')
 
         super(Delegate, self).paint(painter, option, index)

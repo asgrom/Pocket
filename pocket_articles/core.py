@@ -122,7 +122,9 @@ class Pocket(MainWindow):
         self.ui.actionExportArticleTags.triggered.connect(self.export_article_tags)
         self.ui.actionImportTags.triggered.connect(self.import_tags)
 
-    def resetCurrentState(self):
+    def resetCurrentState(self, idx: QModelIndex):
+        if not idx.isValid() or idx.data(ID) in self.IgnoredTagList or idx.data(ID) is None:
+            return
         self._currentOpenedPageID = None
         self._currentOpenedTagID = None
         self._filterText = None
@@ -497,7 +499,7 @@ class Pocket(MainWindow):
     @pyqtSlot(QModelIndex)
     def tag_selected(self, index: QModelIndex):
         """Открываем статьи с выбранным тегом в дереве дегов."""
-        if not index.isValid():
+        if not index.isValid() or index.data(ID) in self.IgnoredTagList or index.data(ID) is None:
             return
         tagID = index.data(ID)
         if tagID == 'all_articles':
@@ -510,14 +512,12 @@ class Pocket(MainWindow):
                 where id not in
                 (select id_page from webpagetags group by id_page)
                 order by lower({}) {} limit ? offset ?;""")
-        elif tagID not in MainWindow.ignoredTags:
+        else:
             query = (
                 """select time_saved, title, webpages.id
                 from webpages inner join webpagetags w on webpages.id = w.id_page
                 where w.id_tag = {0}
                 order by lower({{}}) {{}} limit ? offset ?;""".format(tagID))
-        else:
-            return
         self.articleTitleModel.changeSqlQuery(query)
 
     @pyqtSlot()
@@ -873,9 +873,10 @@ def main():
     from qtl18n_ru import localization
     localization.setupRussianLang(app)
 
-    fh = QFile(':/css/stylesheet.qss')
-    if fh.open(QIODevice.ReadOnly | QIODevice.Text):
-        app.setStyleSheet(QTextStream(fh).readAll())
+    # fh = QFile(':/css/stylesheet.qss')
+    # fh = QFile('/home/alexandr/PycharmProjects/Pocket/pocket_articles/css/stylesheet.qss')
+    # if fh.open(QIODevice.ReadOnly | QIODevice.Text):
+    #     app.setStyleSheet(QTextStream(fh).readAll())
 
     w = Pocket()
     w.show()

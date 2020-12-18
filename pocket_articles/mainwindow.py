@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
 
     database = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data/articles.db')
     configFile = os.path.join(os.path.dirname(__file__), 'config/config.json')
-    ignoredTags = ['line', 'tags']
+    IgnoredTagList = ['line', 'tags']
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -33,8 +33,11 @@ class MainWindow(QMainWindow):
         # временный HTML файл
         self._tmphtmlfile = None
         # текущая открытая статья ID
+        # tuple(строка, id в базе)
         self._currentOpenedPageID = None
+        # tuple(row, column, parent.row, parent.column)
         self._currentOpenedTagID = None
+        # objectName sortGroup menu action
         self._currentSortOrder = None
         self._filterText = None
         self._searchText = None
@@ -49,7 +52,7 @@ class MainWindow(QMainWindow):
 
         self.ui = Ui_MainUI()
         self.ui.setupUi(self)
-        self.loadUi()
+        self.initUI()
 
     def config_parser(self):
         if os.path.exists(self.configFile):
@@ -67,7 +70,7 @@ class MainWindow(QMainWindow):
             self._filterText = statusDict.get('filter')
             self._searchText = statusDict.get('search')
 
-    def loadUi(self):
+    def initUI(self):
         """Инициализация основных элементов интерфеса"""
         # иконка лупы в строке поиска по базе
         self.ui.dbSearch.addAction(QIcon(':/images/search-50.svg'), QLineEdit.LeadingPosition)
@@ -75,6 +78,9 @@ class MainWindow(QMainWindow):
         self.ui.filterArticleLineEdit.addAction(QIcon(':/images/filter_list.svg'), QLineEdit.LeadingPosition)
         # прячем label с url
         self.ui.urlLabel.hide()
+        # self.ui.articleViewFrame.setContentsMargins(0, 0, 0, 0)
+        self.ui.articleViewFrameLayout.setContentsMargins(5, 5, 5, 0)
+        self._setPalette()
 
         ################################################################################
         # отображение списка статей
@@ -83,6 +89,7 @@ class MainWindow(QMainWindow):
         self.articleTitleModel.setObjectName('ArticleList')
         self.ui.articleView.setSortingEnabled(False)
         self.ui.articleView.verticalHeader().setVisible(True)
+        # режим выбора. здесь выбор построчно
         self.ui.articleView.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.ui.articleView.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.ui.articleView.setModel(self.articleTitleModel)
@@ -116,14 +123,14 @@ class MainWindow(QMainWindow):
         self.articleTagsHBox.addWidget(self.tagIcon)
         self.articleTagsHBox.addWidget(self.tagCBox)
         self.articleTagsHBox.addStretch(1)  # пружина в конце бокса
-        self.ui.verticalLayout_2.insertLayout(2, self.articleTagsHBox)
+        self.ui.articleViewFrameLayout.insertLayout(2, self.articleTagsHBox)
 
         ################################################################################
         # SearchPanel
         ################################################################################
         self.searchPanel = SearchPanel()
         self.searchPanel.hide()
-        self.ui.verticalLayout_2.addWidget(self.searchPanel)
+        self.ui.articleViewFrameLayout.addWidget(self.searchPanel)
 
         ################################################################################
         # QMenu Контекстное меню для articleTitleView
@@ -165,3 +172,15 @@ class MainWindow(QMainWindow):
         self.ui.exportDataBaseAction.setIcon(QIcon(':/images/database-export.svg'))
         self.ui.actionExit.setIcon(QIcon(':/images/icons8-exit-50.png'))
         self.ui.actionOpenDbase.setIcon(QIcon(':/images/database.svg'))
+
+    def _setPalette(self):
+        """Устанавливаем цвета для текста, подсветки текста и самого
+         подсвеченного текста."""
+        palette = self.palette()
+        # текст
+        palette.setColor(QPalette.Text, QColor(63, 63, 63))
+        # подсветка
+        palette.setColor(QPalette.Highlight, Qt.green)
+        # подсвеченный текст
+        palette.setColor(QPalette.HighlightedText, Qt.red)
+        self.setPalette(palette)
