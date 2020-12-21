@@ -2,9 +2,9 @@
     Делегат для отрисовки выделения и отрисовки линии в QTreeView
 """
 
-from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 
 
 class Delegate(QStyledItemDelegate):
@@ -19,19 +19,22 @@ class Delegate(QStyledItemDelegate):
         dx = 5
         dy = 2
 
+        ######################################################################
+        # рисуем линию
         if index.data(Qt.UserRole) == 'line':
             pen = QPen()
             pen.setWidthF(1.0)
             pen.setColor(QColor(255, 170, 80, 255))
             painter.setPen(pen)
             painter.drawLine(QLineF(
-                    dx,
-                    rect.y() + (rect.height() - 1) / 2,
-                    rect.width() - 1 + rect.x() - dx,
-                    rect.y() + (rect.height() - 1) / 2
-                    ))
+                dx,
+                rect.y() + (rect.height() - 1) / 2,
+                rect.width() - 1 + rect.x() - dx,
+                rect.y() + (rect.height() - 1) / 2
+            ))
             return
 
+        ######################################################################
         # получаем текст с разрывом, если он не помещается в область
         if index.data(Qt.UserRole + 1) is not None:
             elidedText = option.fontMetrics.elidedText(
@@ -45,6 +48,7 @@ class Delegate(QStyledItemDelegate):
 
         painter.setRenderHints(QPainter.TextAntialiasing | QPainter.Antialiasing, True)
 
+        ######################################################################
         # рисуем градиент вокруг выделенного текста
         if option.state & QStyle.State_Selected:
             selectionRect = QRect(rect)
@@ -65,18 +69,17 @@ class Delegate(QStyledItemDelegate):
             painter.setBrush(gradient)
             painter.drawRoundedRect(selectionRect, 10, 10)
 
+        ######################################################################
+        # рисуем иконку
+        if index.data(Qt.DecorationRole) is not None:
+            opt = QStyleOptionViewItem(option)
+            iconSize = opt.decorationSize
+            icon = index.data(Qt.DecorationRole)
+            painter.drawPixmap(
+                rect.x(),
+                rect.y() + (rect.height() - iconSize.height()) // 2 - 1,
+                QPixmap(icon.pixmap(iconSize)))
+            rect.setX(rect.x() + iconSize.width() + 5)
+
         painter.setPen(QColor(63, 63, 63))
         painter.drawText(rect, Qt.AlignVCenter, elidedText)
-
-        # дописывает количесво статей в строку с тегом
-        # if index.data(Qt.UserRole + 1) is not None:
-        #     fm = option.fontMetrics
-        #     rect = option.rect
-        #     painter.drawText(rect.x() + fm.width(index.data(Qt.DisplayRole) + '    '), rect.y(),
-        #                      fm.width(f'({index.data(Qt.UserRole + 1)})'), rect.height(),
-        #                      Qt.AlignLeft | Qt.AlignVCenter, f'({index.data(Qt.UserRole + 1)})')
-        #     # painter.drawText(15 + rect.x() + fm.width(index.data(Qt.DisplayRole)), rect.y(),
-        #     #                  rect.width() - 15 - fm.width(index.data(Qt.DisplayRole)), rect.height(),
-        #     #                  int(Qt.AlignLeft | Qt.AlignVCenter), f'({index.data(Qt.UserRole + 1)})')
-        #
-        # super(Delegate, self).paint(painter, option, index)

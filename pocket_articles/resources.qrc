@@ -1,8 +1,28 @@
 <RCC>
   <qresource prefix="/">
-    <file>images/filter_list.svg</file>
-    <file>images/collapse-arrow.png</file>
-    <file>images/expand-arrow.png</file>
+    <file>css/stylesheet.qss</file>
+    <file>icons/icons8-pocket.png</file>
+    <file>icons/icons8-pocket-50.png</file>
+    <file>icons/icons8-pocket-50.svg</file>
+    <file>icons/icons8-pocket-100.png</file>
+    <file>icons/icons8-pocket-100.svg</file>
+    <file>icons/icons8-pocket-150.png</file>
+    <file>icons/icons8-pocket-150.svg</file>
+    <file>icons/icons8-pocket-250.png</file>
+    <file>icons/icons8-pocket-250.svg</file>
+    <file>icons/icons8-pocket-500.png</file>
+    <file>icons/icons8-pocket-500.svg</file>
+    <file>icons/icons8-pocket_128px.png</file>
+    <file>icons/pocket128.png</file>
+    <file>icons/Pocket-alt-icon.png</file>
+    <file>icons/Pocket-alt-icon16.png</file>
+    <file>icons/Pocket-alt-icon24.png</file>
+    <file>icons/Pocket-alt-icon32.png</file>
+    <file>icons/Pocket-alt-icon48.png</file>
+    <file>icons/Pocket-alt-icon64.png</file>
+    <file>icons/Pocket-alt-icon-72.png</file>
+    <file>icons/Pocket-alt-icon-96.png</file>
+    <file>images/3844472-hamburger-list-menu-more-navigation_110338.svg</file>
     <file>images/add-database-button-for-interface.svg</file>
     <file>images/arrow-down.png</file>
     <file>images/arrow-left-bold.svg</file>
@@ -13,6 +33,7 @@
     <file>images/close-circle.svg</file>
     <file>images/close-for-dark-theme.png</file>
     <file>images/close-for-light-theme.png</file>
+    <file>images/collapse-arrow.png</file>
     <file>images/database.svg</file>
     <file>images/database-arrow-down.svg</file>
     <file>images/database-arrow-left.svg</file>
@@ -23,8 +44,12 @@
     <file>images/database-import.svg</file>
     <file>images/database-plus.svg</file>
     <file>images/database-sync.svg</file>
+    <file>images/delete.png</file>
     <file>images/document-import.png</file>
+    <file>images/expand-arrow.png</file>
+    <file>images/favorites.png</file>
     <file>images/fileclose.png</file>
+    <file>images/filter_list.svg</file>
     <file>images/forward.svg</file>
     <file>images/hline.png</file>
     <file>images/iconfinder_037_95946.png</file>
@@ -43,7 +68,5 @@
     <file>images/search-150.svg</file>
     <file>images/tag.png</file>
     <file>images/window-close.svg</file>
-    <file>icons/pocket128.png</file>
-    <file>css/stylesheet.qss</file>
   </qresource>
 </RCC>

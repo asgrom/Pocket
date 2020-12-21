@@ -610,6 +610,7 @@ class Pocket(MainWindow):
             favorites_id = favorites_id[0]
         favorites.setData(favorites_id, ID)
         favorites.setData(0, COUNT)
+        favorites.setIcon(QIcon(QPixmap(':/images/favorites.png')))
         favorites.setEditable(False)
         return favorites
 
