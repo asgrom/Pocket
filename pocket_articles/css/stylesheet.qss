@@ -8,11 +8,14 @@
     padding: 0;
     margin-left: 0;
 }
-#filterArticleLineEdit, #dbSearch {
+
+/* СТРОКИ РЕДАКТИРОВАНИЯ ДЛЯ ФИЛЬТРА И ПОИСКА ПО БАЗЕ */
+#filterArticleLineEdit, #dbSearch, #tagFilterLineEdit {
     border-width: 1px;
     border-style: inset;
     border-radius: 10px;
-    border-color: rgba(83, 145, 222, 0.8);
+    border-color: rgba(255, 170, 80, 0.5);
+    /*border-color: rgba(83, 145, 222, 0.8);*/
 }
 
 /* угол между двумя скроллбарами */

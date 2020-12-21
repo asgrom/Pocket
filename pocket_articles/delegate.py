@@ -34,18 +34,6 @@ class Delegate(QStyledItemDelegate):
             ))
             return
 
-        ######################################################################
-        # получаем текст с разрывом, если он не помещается в область
-        if index.data(Qt.UserRole + 1) is not None:
-            elidedText = option.fontMetrics.elidedText(
-                index.data() + '    ' + f'({index.data(Qt.UserRole + 1)})',
-                Qt.ElideRight, rect.width() - 2 * dx
-            )
-        else:
-            elidedText = option.fontMetrics.elidedText(
-                index.data(), Qt.ElideRight, rect.width() - 2 * dx
-            )
-
         painter.setRenderHints(QPainter.TextAntialiasing | QPainter.Antialiasing, True)
 
         ######################################################################
@@ -80,6 +68,19 @@ class Delegate(QStyledItemDelegate):
                 rect.y() + (rect.height() - iconSize.height()) // 2 - 1,
                 QPixmap(icon.pixmap(iconSize)))
             rect.setX(rect.x() + iconSize.width() + 5)
+
+        ######################################################################
+        # получаем текст с разрывом, если он не помещается в область
+        if index.data(Qt.UserRole + 1) is not None:
+            elidedText = option.fontMetrics.elidedText(
+                index.data() + '    ' + f'({index.data(Qt.UserRole + 1)})',
+                Qt.ElideRight, rect.width() - 2 * dx
+            )
+        else:
+            elidedText = option.fontMetrics.elidedText(
+                index.data(), Qt.ElideRight, rect.width() - 2 * dx
+            )
+
 
         painter.setPen(QColor(63, 63, 63))
         painter.drawText(rect, Qt.AlignVCenter, elidedText)

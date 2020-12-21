@@ -18,11 +18,35 @@
     <normaloff>:/icons/pocket128.png</normaloff>:/icons/pocket128.png</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_4">
+   <layout class="QVBoxLayout" name="centralLayout">
+    <property name="spacing">
+     <number>5</number>
+    </property>
+    <property name="leftMargin">
+     <number>5</number>
+    </property>
+    <property name="topMargin">
+     <number>5</number>
+    </property>
+    <property name="rightMargin">
+     <number>5</number>
+    </property>
+    <property name="bottomMargin">
+     <number>5</number>
+    </property>
     <item>
      <widget class="QSplitter" name="splitter_2">
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="lineWidth">
+       <number>0</number>
+      </property>
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
+      </property>
+      <property name="handleWidth">
+       <number>6</number>
       </property>
       <widget class="QFrame" name="tagsFrame">
        <property name="sizePolicy">
@@ -34,7 +58,7 @@
        <property name="frameShape">
         <enum>QFrame::StyledPanel</enum>
        </property>
-       <layout class="QVBoxLayout" name="tagFrameLayout">
+       <layout class="QVBoxLayout" name="verticalLayout">
         <property name="leftMargin">
          <number>5</number>
         </property>
@@ -48,15 +72,15 @@
          <number>3</number>
         </property>
         <item>
-         <widget class="QLabel" name="label_3">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+         <widget class="QLineEdit" name="tagFilterLineEdit">
+          <property name="frame">
+           <bool>true</bool>
           </property>
-          <property name="text">
-           <string>Браузер тегов</string>
+          <property name="placeholderText">
+           <string>Фильтр</string>
+          </property>
+          <property name="clearButtonEnabled">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
@@ -103,8 +127,14 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="lineWidth">
+        <number>0</number>
+       </property>
        <property name="orientation">
         <enum>Qt::Vertical</enum>
+       </property>
+       <property name="handleWidth">
+        <number>6</number>
        </property>
        <widget class="QFrame" name="articleListFrame">
         <property name="sizePolicy">
@@ -469,7 +499,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Дате [desc]</string>
+    <string>Дата [desc]</string>
    </property>
   </action>
   <action name="actionSortDateAsc">
@@ -477,7 +507,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Дате [asc]</string>
+    <string>Дата [asc]</string>
    </property>
   </action>
   <action name="actionSortTitleDesc">
@@ -485,7 +515,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Названию [desc]</string>
+    <string>Название [desc]</string>
    </property>
   </action>
   <action name="actionSortTitleAsc">
@@ -493,7 +523,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Названию [asc]</string>
+    <string>Название [asc]</string>
    </property>
   </action>
   <action name="actionExportTagsTable">

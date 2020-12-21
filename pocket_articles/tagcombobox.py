@@ -1,38 +1,5 @@
 from PyQt5.QtWidgets import QComboBox, QSizePolicy
 
-_QSS = """
-    QComboBox {
-        border-width: 1px;
-        border-color: grey;
-        border-radius: 9px;
-        border-style: outset;
-        background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 rgba(166, 166, 166, 0.2),
-        stop:0.5 rgba(166, 166, 166, 0.0),
-        stop:1 rgba(166, 166, 166, 0.2));
-    }
-    QComboBox QAbstractItemView {
-        border: 0px outset gray;
-        selection-background-color: rgba(255, 170, 80, 1);
-    }
-    QComboBox:on {
-        padding-top: 6px;
-        padding-left: 8px;
-        border-style: inset;
-    }
-    QComboBox::drop-down {
-        subcontrol-origin: padding;
-        subcontrol-position: top right;
-        width: 15px;
-        border-width: 0px;
-        border-top-right-radius: 9px;
-        border-bottom-right-radius: 9px;
-    }
-    QComboBox::down-arrow {
-        image: url(:/images/arrow-down.png)
-    }
-    """
-
 
 class TagsComboBox(QComboBox):
     """Комбобокс со списком тегов"""
@@ -53,7 +20,6 @@ class TagsComboBox(QComboBox):
         self.setInsertPolicy(QComboBox.InsertAlphabetically)
         # noinspection PyUnresolvedReferences
         self.activated.connect(self.on_activated)
-        # self.setStyleSheet(_QSS)
         self.lineEdit().setStyleSheet(
             'background: transparent;'
             'border-top-left-radius: 9px;'
