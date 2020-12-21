@@ -24,9 +24,12 @@ class ProxyStyle(QProxyStyle):
         # убираем фокусную рамку
         if element == QStyle.PE_FrameFocusRect:
             return
-        if element == QStyle.PE_PanelItemViewRow or element == QStyle.PE_PanelItemViewItem:
+        if element == QStyle.PE_PanelItemViewItem:
             return
-        # palette = option.palette
-        # palette.setColor(palette.HighlightedText, Qt.black)
+        if isinstance(widget, QTreeView):
+            if element == QStyle.PE_PanelItemViewItem:
+                return
+            if element == QStyle.PE_PanelItemViewRow:
+                return
 
         super(ProxyStyle, self).drawPrimitive(element, option, painter, widget)

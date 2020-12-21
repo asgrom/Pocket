@@ -1,5 +1,6 @@
 # todo:
 #   ДОБАВИТЬ ВОЗМОЖНОСТЬ РЕДАКТИРОВАНИЯ НАЗВАНИЯ СТАТЕЙ.
+#   приделать фильтр в браузере тегов
 #
 #   1.1 ДОбАВИТЬ ВОЗМОЖНОСТЬ ОТКРЫТИЯ HTML В ОТДЕЛЬНОМ ОКНЕ.
 #   2. СДЕЛАТЬ ВОЗМОЖНОСТЬ ПЕРЕИМЕНОВАНИЯ ТЕГОВ В ДЕРЕВЕ ТЕГОВ.
@@ -616,6 +617,7 @@ class Pocket(MainWindow):
         """Создает QStandardItem с тегами."""
         tags = QStandardItem('Теги')
         tags.setFlags(Qt.NoItemFlags)
+        tags.setIcon(QIcon(QPixmap(':/images/tag.png')))
         tags.setData('tags', ID)
         for tag, _id in self.con.execute('select tag, id from tags;'):
             if _id == favorites_id:
@@ -874,9 +876,9 @@ def main():
     localization.setupRussianLang(app)
 
     # fh = QFile(':/css/stylesheet.qss')
-    # fh = QFile('/home/alexandr/PycharmProjects/Pocket/pocket_articles/css/stylesheet.qss')
-    # if fh.open(QIODevice.ReadOnly | QIODevice.Text):
-    #     app.setStyleSheet(QTextStream(fh).readAll())
+    fh = QFile('/home/alexandr/PycharmProjects/Pocket/pocket_articles/css/stylesheet.qss')
+    if fh.open(QIODevice.ReadOnly | QIODevice.Text):
+        app.setStyleSheet(QTextStream(fh).readAll())
 
     w = Pocket()
     w.show()

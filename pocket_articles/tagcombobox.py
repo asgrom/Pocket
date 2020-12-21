@@ -53,7 +53,7 @@ class TagsComboBox(QComboBox):
         self.setInsertPolicy(QComboBox.InsertAlphabetically)
         # noinspection PyUnresolvedReferences
         self.activated.connect(self.on_activated)
-        self.setStyleSheet(_QSS)
+        # self.setStyleSheet(_QSS)
         self.lineEdit().setStyleSheet(
             'background: transparent;'
             'border-top-left-radius: 9px;'
