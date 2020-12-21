@@ -1,5 +1,5 @@
 from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot
-from PyQt5.QtGui import QKeySequence, QShowEvent, QIcon
+from PyQt5.QtGui import QKeySequence, QShowEvent, QIcon, QPixmap
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QHBoxLayout, QPushButton, QCheckBox, QLineEdit, QShortcut
 
@@ -54,7 +54,7 @@ class SearchPanel(QWidget):
         hbox = QHBoxLayout(self)
         hbox.setContentsMargins(0, 0, 0, 1)
 
-        icon_close = QIcon(':/images/close-circle.svg')
+        icon_close = QIcon(QPixmap(':/images/window-close.png').scaledToWidth(16))
         icon_back = QIcon(':/images/iconfinder_old-edit-undo_23492.png')
         icon_forward = QIcon(':/images/iconfinder_old-edit-redo_23491.png')
 

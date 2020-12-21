@@ -1,6 +1,7 @@
 # todo:
 #   ДОБАВИТЬ ВОЗМОЖНОСТЬ РЕДАКТИРОВАНИЯ НАЗВАНИЯ СТАТЕЙ.
 #   приделать фильтр в браузере тегов
+#   приделать тулбар
 #
 #   1.1 ДОбАВИТЬ ВОЗМОЖНОСТЬ ОТКРЫТИЯ HTML В ОТДЕЛЬНОМ ОКНЕ.
 #   2. СДЕЛАТЬ ВОЗМОЖНОСТЬ ПЕРЕИМЕНОВАНИЯ ТЕГОВ В ДЕРЕВЕ ТЕГОВ.
@@ -610,7 +611,7 @@ class Pocket(MainWindow):
             favorites_id = favorites_id[0]
         favorites.setData(favorites_id, ID)
         favorites.setData(0, COUNT)
-        favorites.setIcon(QIcon(QPixmap(':/images/favorites.png')))
+        favorites.setIcon(QIcon(QPixmap(':/images/rating.png')))
         favorites.setEditable(False)
         return favorites
 
@@ -618,7 +619,7 @@ class Pocket(MainWindow):
         """Создает QStandardItem с тегами."""
         tags = QStandardItem('Теги')
         tags.setFlags(Qt.NoItemFlags)
-        tags.setIcon(QIcon(QPixmap(':/images/tag.png')))
+        tags.setIcon(QIcon(QPixmap(':/images/tags.png')))
         tags.setData('tags', ID)
         for tag, _id in self.con.execute('select tag, id from tags;'):
             if _id == favorites_id:

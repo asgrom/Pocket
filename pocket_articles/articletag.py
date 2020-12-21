@@ -1,5 +1,5 @@
 from PyQt5.QtCore import pyqtSlot, QCoreApplication, QEvent
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QLineEdit, QSizePolicy
 
 _QSS = """
@@ -40,7 +40,7 @@ class ArticleTag(QLineEdit):
             **kwargs:
         """
         super().__init__(*args, **kwargs)
-        icon = QIcon(':/images/close-circle.svg')
+        icon = QIcon(QPixmap(':/images/window-close.png').scaledToWidth(16))
         self.setReadOnly(True)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.setFrame(False)
