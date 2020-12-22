@@ -4,14 +4,11 @@ from PyQt5.QtWidgets import QLineEdit, QSizePolicy
 
 _QSS = """
     QLineEdit {
-        background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 rgba(166, 166, 166, 0.2),
-        stop:0.5 rgba(166, 166, 166, 0.0),
-        stop:1 rgba(166, 166, 166, 0.2));
+        background-color: palette(window);
         border-radius: 10px;
-        border-style: inset;
+        border-style: outset;
         border-width: 1px;
-        border-color: grey;
+        border-color: darkgrey;
         padding-left: 5px;
     }"""
 
@@ -48,7 +45,7 @@ class ArticleTag(QLineEdit):
         fm = self.fontMetrics()
         width = fm.width(self.text())  # ширина строки в пикселах
         self.setFixedWidth(width + 34 + 5)
-        self.setStyleSheet(_QSS)
+        # self.setStyleSheet(_QSS)
         # вставляем иконку действия
         # noinspection PyNoneFunctionAssignment
         self.deleteAction = self.addAction(icon, QLineEdit.TrailingPosition)

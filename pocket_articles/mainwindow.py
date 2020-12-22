@@ -75,7 +75,14 @@ class MainWindow(QMainWindow):
         # иконка лупы в строке поиска по базе
         self.ui.dbSearch.addAction(QIcon(':/images/search-50.svg'), QLineEdit.LeadingPosition)
         # иконка в строку фильтра
-        self.ui.filterArticleLineEdit.addAction(QIcon(':/images/filter_list.svg'), QLineEdit.LeadingPosition)
+        self.ui.filterArticleLineEdit.addAction(
+            QIcon(':/images/filter_list.svg'),
+            QLineEdit.LeadingPosition
+        )
+        self.ui.tagFilterLineEdit.addAction(
+            QIcon(':/images/filter_list.svg'),
+            QLineEdit.LeadingPosition
+        )
         # прячем label с url
         self.ui.urlLabel.hide()
         # self.ui.articleViewFrame.setContentsMargins(0, 0, 0, 0)
@@ -103,6 +110,7 @@ class MainWindow(QMainWindow):
         self.ui.tagsView.setHeaderHidden(True)
         self.ui.tagsView.setSortingEnabled(True)
         self.ui.tagsView.sortByColumn(0, Qt.AscendingOrder)
+        # self.ui.tagsFrame.layout().setContentsMargins(5, 5, 5, 0)
         self.tagProxyModel = TreeViewProxyModel()
         self.tagProxyModel.setSortCaseSensitivity(Qt.CaseInsensitive)
         # noinspection PyTypeChecker
