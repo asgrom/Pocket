@@ -1,0 +1,28 @@
+QLineEdit {
+    border-radius: 10px;
+    border-style: outset;
+    border-width: 1px;
+    border-color: darkgray;
+    background-color: palette(window);
+    /*padding: 0 8px;*/
+}
+QPushButton {
+    border-style: none;
+    border-width: 1px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    padding-right: 5px;
+    padding-left: 5px;
+    border-radius: 5px;
+    border-color: grey;
+}
+QPushButton:hover:pressed {
+    border-style: inset;
+    background-color: palette(window);
+    /* background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 rgb(215,215,215), stop:1 beige); */
+}
+QPushButton:hover {
+    border-style: outset;
+    background-color: palette(window);
+    /* background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 beige, stop:1 rgb(215,215,215)); */
+}

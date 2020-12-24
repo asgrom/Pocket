@@ -1,4 +1,4 @@
-from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot
+from PyQt5.QtCore import pyqtSignal, Qt, pyqtSlot, QIODevice, QFile
 from PyQt5.QtGui import QKeySequence, QShowEvent, QIcon, QPixmap
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QHBoxLayout, QPushButton, QCheckBox, QLineEdit, QShortcut
@@ -8,7 +8,6 @@ from . import applogger
 from . import resources
 
 logger = applogger.get_logger(__name__)
-
 
 _QSS = """
     QLineEdit {
@@ -49,20 +48,26 @@ class SearchPanel(QWidget):
         super(SearchPanel, self).__init__(parent)
         self.setContentsMargins(0, 0, 0, 0)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
-        self.setStyleSheet(_QSS)
+        fh = QFile('/home/alexandr/PycharmProjects/Pocket/pocket_articles/css/searchpanel.qss')
+        # fh = QFile(':/css/searchpanel.qss')
+        if fh.open(QIODevice.ReadOnly):
+            self.setStyleSheet(fh.readAll().data().decode())
+        # self.setStyleSheet(_QSS)
 
         hbox = QHBoxLayout(self)
-        hbox.setContentsMargins(0, 0, 0, 1)
+        hbox.setContentsMargins(0, 0, 0, 0)
 
         icon_close = QIcon(QPixmap(':/images/window-close.png').scaledToWidth(16))
-        icon_back = QIcon(':/images/iconfinder_old-edit-undo_23492.png')
-        icon_forward = QIcon(':/images/iconfinder_old-edit-redo_23491.png')
+        icon_back = QIcon(':/images/back.png')
+        icon_forward = QIcon(':/images/forward.png')
 
         self.nextBtn = QPushButton(icon_forward, 'Следующее')
         self.nextBtn.clicked.connect(self.search)
+        self.nextBtn.setFixedHeight(20)
 
         self.prevBtn = QPushButton(icon_back, 'Предыдущее')
         self.prevBtn.clicked.connect(lambda: self.search(QWebEnginePage.FindBackward))
+        self.prevBtn.setFixedHeight(20)
 
         self.caseSensitively = QCheckBox('Учитывать регистр')
 
@@ -72,6 +77,7 @@ class SearchPanel(QWidget):
 
         self.closeBtn = QPushButton(icon_close, '')
         self.closeBtn.clicked.connect(self.hide_widget)
+        self.closeBtn.setFixedHeight(20)
 
         hbox.addStretch(1)
         hbox.addWidget(self.closeBtn)

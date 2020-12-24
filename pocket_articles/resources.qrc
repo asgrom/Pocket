@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="/">
+    <file>css/searchpanel.qss</file>
     <file>css/stylesheet.qss</file>
     <file>icons/pocket128.png</file>
     <file>images/3844472-hamburger-list-menu-more-navigation_110338.svg</file>

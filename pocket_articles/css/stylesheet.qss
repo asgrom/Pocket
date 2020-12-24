@@ -16,7 +16,6 @@
     stop: 0 rgba(230, 230, 230, 0.9),
     stop: 0.5 rgba(230, 230, 230, 0.9),
     stop: 1 rgba(230, 230, 230, 0.9));
-
 }
 
 /* СТРОКИ РЕДАКТИРОВАНИЯ ДЛЯ ФИЛЬТРА И ПОИСКА ПО БАЗЕ */
@@ -31,8 +30,8 @@
 /* угол между двумя скроллбарами */
 QAbstractScrollArea::corner {
     border: 0px solid transparent;
-    background: transparent;
-    border-radius: 5px;
+    background: palette(window);
+    border-bottom-right-radius: 5px;
 }
 
 QAbstractItemView.QTreeView, QAbstractItemView.QTableView {
@@ -185,7 +184,7 @@ QScrollBar::sub-line:vertical {
 }
 
 QScrollBar:horizontal {
-    background-color: #efefef;
+    /* background-color: #efefef; */
     border-bottom-left-radius: 5px;
     border-bottom-right-radius: 5px;
     height: 12px;
@@ -265,7 +264,13 @@ QComboBox::drop-down {
 QComboBox::down-arrow {
     image: url(:/images/arrow-down.png)
 }
+/***********************************************************************
+************************************************************************
+*
+*   КОНТУРЫ ТАБЛИЦ
 
+************************************************************************
+***********************************************************************/
 QTreeView, QTableView {
     border-style: solid;
     border-left-color: rgba(150,150,150,.5);
@@ -274,9 +279,13 @@ QTreeView, QTableView {
     border-bottom-color: darkgrey;
 }
 
-/*
-        НАСТРОЙКА КОНТУРА ДЛЯ LINEEDIT'S, COMBOBOX
-*/
+/***********************************************************************
+************************************************************************
+*
+*        НАСТРОЙКА КОНТУРА ДЛЯ LINEEDIT'S, COMBOBOX
+*
+************************************************************************
+***********************************************************************/
 #filterArticleLineEdit,
 #dbSearch,
 #tagFilterLineEdit,
@@ -286,6 +295,24 @@ QComboBox
     border-width: 1px;
     border-style: outset;
     border-radius: 10px;
-    border-color: red;
+    border-color: darkgrey;
     background-color: palette(window);
+}
+
+/***********************************************************************
+************************************************************************
+*
+*       QMenu
+*
+************************************************************************
+***********************************************************************/
+QMenu {
+    background-color: palette(window);
+    /* border: 1px solid darkgrey; */
+    /* border-radius: 5px; */
+}
+
+QMenu::item:selected {
+    background: palette(highlight);
+    color: palette(highlighted-text)
 }

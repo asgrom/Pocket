@@ -87,7 +87,7 @@ class MainWindow(QMainWindow):
         self.ui.urlLabel.hide()
         # self.ui.articleViewFrame.setContentsMargins(0, 0, 0, 0)
         self.ui.articleViewFrameLayout.setContentsMargins(5, 5, 5, 0)
-        self._setPalette()
+        self.changePalette()
 
         ################################################################################
         # отображение списка статей
@@ -181,14 +181,15 @@ class MainWindow(QMainWindow):
         self.ui.actionExit.setIcon(QIcon(':/images/icons8-exit-50.png'))
         self.ui.actionOpenDbase.setIcon(QIcon(':/images/database.svg'))
 
-    def _setPalette(self):
+    def changePalette(self):
         """Устанавливаем цвета для текста, подсветки текста и самого
          подсвеченного текста."""
-        palette = self.palette()
+        palette = qApp.palette()
         # текст
         palette.setColor(QPalette.Text, QColor(63, 63, 63))
         # подсветка
-        palette.setColor(QPalette.Highlight, Qt.green)
+        # palette.setColor(QPalette.Highlight, QColor(210, 210, 210, 255))
         # подсвеченный текст
-        palette.setColor(QPalette.HighlightedText, Qt.red)
-        self.setPalette(palette)
+        # palette.setColor(QPalette.HighlightedText, QColor(49, 117, 168, 255))
+        # palette.setColor(QPalette.HighlightedText, Qt.blue)
+        qApp.setPalette(palette)

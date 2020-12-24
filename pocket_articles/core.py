@@ -358,13 +358,12 @@ class Pocket(MainWindow):
 
     @pyqtSlot(str, QWebEnginePage.FindFlag)
     def search_on_page(self, text, flags):
-        color = self.searchPanel.palette().color(QPalette.Base).getRgb()
 
         def callback(result):
             if not result and text != '':
                 self.searchPanel.search_le.setStyleSheet('background: rgba(255, 0, 0, 0.5);')
             else:
-                self.searchPanel.search_le.setStyleSheet(f'background: rgba({color});')
+                self.searchPanel.search_le.setStyleSheet('background: palette(window);')
 
         self.ui.webView.findText(text, flags, callback)
 
@@ -634,9 +633,10 @@ class Pocket(MainWindow):
         """Создает QStandardItem без тегов."""
         notags_count = self.con.execute(self.notags_req).fetchone()[0]
         # notags_count = 0 if not notags_count else notags_count[0]
-        notags = QStandardItem(f'Без тегов')
+        notags = QStandardItem('Без тегов')
         notags.setData('notags', ID)
         notags.setData(notags_count, COUNT)
+        notags.setIcon(QIcon(QPixmap(':/images/view.png')))
         notags.setEditable(False)
         return notags
 
@@ -650,6 +650,7 @@ class Pocket(MainWindow):
         all_articles = QStandardItem('Все статьи')
         all_articles.setData('all_articles', ID)
         all_articles.setData(article_count, COUNT)
+        all_articles.setIcon(QIcon(QPixmap(':/images/catalog.png')))
         all_articles.setEditable(False)
         return all_articles
 
