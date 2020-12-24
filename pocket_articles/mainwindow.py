@@ -39,8 +39,9 @@ class MainWindow(QMainWindow):
         self._currentOpenedTagID = None
         # objectName sortGroup menu action
         self._currentSortOrder = None
-        self._filterText = None
+        self._titleFilter = None
         self._searchText = None
+        self._tagFilter = None
 
         self.config_parser()
         # создание соединения с базой данных
@@ -67,8 +68,9 @@ class MainWindow(QMainWindow):
             self._currentSortOrder = statusDict.get('sortOrder')
             self._currentOpenedTagID = statusDict.get('tagID')
             self._currentOpenedPageID = statusDict.get('articleID')
-            self._filterText = statusDict.get('filter')
+            self._titleFilter = statusDict.get('filter')
             self._searchText = statusDict.get('search')
+            self._tagFilter = statusDict.get('tagFilter')
 
     def initUI(self):
         """Инициализация основных элементов интерфеса"""
@@ -112,7 +114,11 @@ class MainWindow(QMainWindow):
         self.ui.tagsView.sortByColumn(0, Qt.AscendingOrder)
         # self.ui.tagsFrame.layout().setContentsMargins(5, 5, 5, 0)
         self.tagProxyModel = TreeViewProxyModel()
-        self.tagProxyModel.setSortCaseSensitivity(Qt.CaseInsensitive)
+        # self.tagProxyModel.setSortCaseSensitivity(Qt.CaseInsensitive)
+        # self.tagProxyModel.setFilterKeyColumn(0)
+        # self.tagProxyModel.setRecursiveFilteringEnabled(True)
+        # self.tagProxyModel.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        # self.tagProxyModel.setSortLocaleAware(True)
         # noinspection PyTypeChecker
         self.tagProxyModel.setSourceModel(self.articleTagModel)
         self.ui.tagsView.setModel(self.tagProxyModel)

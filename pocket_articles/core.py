@@ -103,6 +103,7 @@ class Pocket(MainWindow):
         # фильтр заголовков
         self.ui.filterArticleLineEdit.returnPressed.connect(self.set_filter_article_title)
         self.ui.filterArticleLineEdit.returnPressed.connect(self.ui.dbSearch.clear)
+        self.ui.filterArticleLineEdit.returnPressed.connect(self.ui.tagFilterLineEdit.clear)
 
         # выбор по тегу
         self.ui.tagsView.clicked.connect(self.tag_selected)
@@ -111,6 +112,7 @@ class Pocket(MainWindow):
         # поиск по базе
         self.ui.dbSearch.returnPressed.connect(self.db_search)
         self.ui.dbSearch.returnPressed.connect(self.ui.filterArticleLineEdit.clear)
+        self.ui.dbSearch.returnPressed.connect(self.ui.tagFilterLineEdit.clear)
 
         # активируем панель поиска на странице
         QShortcut(QKeySequence.Find, self, self.searchPanel.show)
@@ -123,14 +125,20 @@ class Pocket(MainWindow):
         # экспорт таблицы webpagetags
         self.ui.actionExportArticleTags.triggered.connect(self.export_article_tags)
         self.ui.actionImportTags.triggered.connect(self.import_tags)
+        # фильтр к тегам
+        self.ui.tagFilterLineEdit.textChanged.connect(self.tagProxyModel.setFilterRegExp)
 
     def resetCurrentState(self, idx: QModelIndex):
         if not idx.isValid() or idx.data(ID) in self.IgnoredTagList or idx.data(ID) is None:
             return
+        if self.ui.tagFilterLineEdit.text():
+            return
         self._currentOpenedPageID = None
         self._currentOpenedTagID = None
-        self._filterText = None
+        self._titleFilter = None
         self._searchText = None
+        self._tagFilter = None
+        self.ui.tagFilterLineEdit.clear()
         self.ui.dbSearch.clear()
         self.ui.filterArticleLineEdit.clear()
         self._currentSortOrder = None
@@ -144,13 +152,15 @@ class Pocket(MainWindow):
                     act.setChecked(True)
                     act.triggered.emit()
                     break
-        if self._searchText or self._filterText:
-            if self._filterText:
-                self.ui.filterArticleLineEdit.setText(self._filterText)
+        if self._searchText or self._titleFilter or self._tagFilter:
+            if self._titleFilter:
+                self.ui.filterArticleLineEdit.setText(self._titleFilter)
                 self.ui.filterArticleLineEdit.returnPressed.emit()
             elif self._searchText:
                 self.ui.dbSearch.setText(self._searchText)
                 self.ui.dbSearch.returnPressed.emit()
+            elif self._tagFilter:
+                self.ui.tagFilterLineEdit.setText(self._tagFilter)
         else:
             tagIdx = self.ui.tagsView.model().index(
                 self._currentOpenedTagID[0], self._currentOpenedTagID[1],
@@ -841,7 +851,8 @@ class Pocket(MainWindow):
             curTagviewIdx.parent().row(), curTagviewIdx.parent().column()
         )
         self._currentSortOrder = self.sortGroup.checkedAction().objectName()
-        self._filterText = self.ui.filterArticleLineEdit.text()
+        self._titleFilter = self.ui.filterArticleLineEdit.text()
+        self._tagFilter = self.ui.tagFilterLineEdit.text()
         self._searchText = self.ui.dbSearch.text()
         QApplication.restoreOverrideCursor()
 
@@ -863,8 +874,9 @@ class Pocket(MainWindow):
             articleID=self._currentOpenedPageID,
             tagID=self._currentOpenedTagID,
             sortOrder=self._currentSortOrder,
-            filter=self._filterText,
-            search=self._searchText
+            filter=self._titleFilter,
+            search=self._searchText,
+            tagFilter=self._tagFilter
         )
         with open(self.configFile, 'w') as fh:
             json.dump(statusDict, fh, ensure_ascii=False, indent=4)
