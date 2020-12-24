@@ -129,6 +129,10 @@ class Pocket(MainWindow):
         self.ui.tagFilterLineEdit.textChanged.connect(self.tagProxyModel.setFilterRegExp)
 
     def resetCurrentState(self, idx: QModelIndex):
+        """Сбрасываем текущее состояние.
+
+        Удаляем данные о последней открытой статье, строки поиска и фильтра.
+        """
         if not idx.isValid() or idx.data(ID) in self.IgnoredTagList or idx.data(ID) is None:
             return
         if self.ui.tagFilterLineEdit.text():
@@ -144,30 +148,38 @@ class Pocket(MainWindow):
         self._currentSortOrder = None
 
     def loadLastOpenedPage(self):
+        """Открываем последнюю активную статью в предыдущем сеансе."""
         if self._currentOpenedPageID is None or self._currentOpenedTagID is None:
             return
+
+        # устанавливаем сортировку, если она была изменена
         if self._currentSortOrder:
             for act in self.sortGroup.actions():
                 if act.objectName() == self._currentSortOrder:
                     act.setChecked(True)
                     act.triggered.emit()
                     break
-        if self._searchText or self._titleFilter or self._tagFilter:
+
+        # устанавливаем фильтр или строку поиска по базе
+        if any([self._searchText, self._titleFilter]):
             if self._titleFilter:
                 self.ui.filterArticleLineEdit.setText(self._titleFilter)
                 self.ui.filterArticleLineEdit.returnPressed.emit()
             elif self._searchText:
                 self.ui.dbSearch.setText(self._searchText)
                 self.ui.dbSearch.returnPressed.emit()
-            elif self._tagFilter:
-                self.ui.tagFilterLineEdit.setText(self._tagFilter)
         else:
+            # устанавливаем фильтр в обзоре тегов
+            if self._tagFilter:
+                self.ui.tagFilterLineEdit.setText(self._tagFilter)
             tagIdx = self.ui.tagsView.model().index(
                 self._currentOpenedTagID[0], self._currentOpenedTagID[1],
                 self.ui.tagsView.model().index(self._currentOpenedTagID[2], self._currentOpenedTagID[-1])
             )
             self.ui.tagsView.setCurrentIndex(tagIdx)
             self.tag_selected(tagIdx)
+
+        # устанавливаем текущий индекс статьи
         pageIdx = self.ui.articleView.model().index(self._currentOpenedPageID[0], 1)
         if pageIdx.isValid():
             self.ui.articleView.setCurrentIndex(pageIdx)
