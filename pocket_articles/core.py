@@ -354,7 +354,7 @@ class Pocket(MainWindow):
         res = QMessageBox.question(self, 'Подтвердить', 'Удалить тег?')
         if res == QMessageBox.No:
             return
-        index = self.tagViewSelectionModel.currentIndex()
+        index = self.ui.tagsView.currentIndex()
         if not index.isValid():
             return
         try:

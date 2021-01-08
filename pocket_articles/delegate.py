@@ -81,6 +81,5 @@ class Delegate(QStyledItemDelegate):
                 index.data(), Qt.ElideRight, rect.width() - 2 * dx
             )
 
-
         painter.setPen(QColor(63, 63, 63))
         painter.drawText(rect, Qt.AlignVCenter, elidedText)

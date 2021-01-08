@@ -116,7 +116,6 @@ class MainWindow(QMainWindow):
         # noinspection PyTypeChecker
         self.tagProxyModel.setSourceModel(self.articleTagModel)
         self.ui.tagsView.setModel(self.tagProxyModel)
-        self.tagViewSelectionModel = self.ui.tagsView.selectionModel()
 
         ################################################################################
         # HBoxLayout с комбобоксом со списком тегов и теги выбранной статьи
