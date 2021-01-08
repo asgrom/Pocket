@@ -93,7 +93,8 @@ QTableView {
     stop: 0 rgba(255, 170, 80, 0.3),
     stop: 0.5 rgba(255, 170, 80, 0.6),
     stop: 1 rgba(255, 170, 80, 1));
-    alternate-background-color: rgba(255, 170, 80, 0.1);
+    /*alternate-background-color: rgba(255, 170, 80, 0.1);*/
+    alternate-background-color: palette(alternate-base);
     selection-color: rgb(63, 63, 63);
     gridline-color: rgba(255, 170, 80, 1);
     color: rgb(63, 63, 63);

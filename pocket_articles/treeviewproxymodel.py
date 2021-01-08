@@ -20,8 +20,6 @@ class TreeViewProxyModel(QSortFilterProxyModel):
             rightIdx (QModelIndex):
         """
         if not leftIdx.parent().isValid() or not rightIdx.parent().isValid():
-            if leftIdx.data(Qt.UserRole) == 'line' or rightIdx.data(Qt.UserRole) == 'line':
-                return False
             if leftIdx.data() == 'Все статьи':
                 return True
             if leftIdx.data() == 'Без тегов' and rightIdx.data() in ('Теги', 'Избранное'):

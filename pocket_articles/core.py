@@ -1,6 +1,7 @@
 # todo:
 #   ДОБАВИТЬ ВОЗМОЖНОСТЬ РЕДАКТИРОВАНИЯ НАЗВАНИЯ СТАТЕЙ.
-#   приделать фильтр в браузере тегов
+#   сделать что-то с выбором тегов в браузере тегов(чтобы выбирались только актуальные теги)
+#   переделать resetCurrentState
 #   приделать тулбар
 #
 #   1.1 ДОбАВИТЬ ВОЗМОЖНОСТЬ ОТКРЫТИЯ HTML В ОТДЕЛЬНОМ ОКНЕ.
@@ -31,7 +32,7 @@ from PyQt5.QtWidgets import *
 from . import applogger
 from . import dbmethods
 from .articletag import ArticleTag, DeleteArticleTagEvent
-from .dbmethods import (add_tag, add_article, connect, export_articles)
+from .dbmethods import (add_article, connect, export_articles)
 from .getpagedata import get_data_from_page, get_page_text_content
 from .mainwindow import MainWindow
 from .proxystyle import ProxyStyle
@@ -98,7 +99,7 @@ class Pocket(MainWindow):
 
         # выбор в комбобоксе
         # noinspection PyUnresolvedReferences
-        self.tagCBox.activated.connect(self.add_new_tag)
+        self.tagCBox.tagSelected.connect(self.add_new_tag)
 
         # фильтр заголовков
         self.ui.filterArticleLineEdit.returnPressed.connect(self.set_filter_article_title)
@@ -146,6 +147,7 @@ class Pocket(MainWindow):
         self.ui.dbSearch.clear()
         self.ui.filterArticleLineEdit.clear()
         self._currentSortOrder = None
+        self.tagCBox.setDisabled(True)
 
     def loadLastOpenedPage(self):
         """Открываем последнюю активную статью в предыдущем сеансе."""
@@ -362,7 +364,7 @@ class Pocket(MainWindow):
             logger.info(f'Удален тег {index.data(Qt.DisplayRole)}')
             modelIndex = self.tagProxyModel.mapToSource(index)
             self.articleTagModel.removeRow(modelIndex.row(), modelIndex.parent())
-            self.create_cbx_model()
+            self.tagCBox.completeModel()
         except sql.DatabaseError:
             logger.exception('Ошибка удаления тега')
         else:
@@ -401,6 +403,7 @@ class Pocket(MainWindow):
         self.con = connect(db_path)
         self.database = db_path
         self.articleTitleModel.setCursor(self.con.cursor())
+        self.tagCBox.setDatabaseConnector(self.con)
         self.htmlImportedSignal.emit()
 
     @pyqtSlot()
@@ -567,30 +570,24 @@ class Pocket(MainWindow):
 
         Если статья уже имеет тег, который задается, то при добавлении в базу присходит исключение - так исключается
         дублирование."""
-        if not self._currentOpenedPageID:
-            self.tagCBox.removeItem(index)
-            return
         insert_article_tag = """insert into webpagetags (id_page, id_tag) VALUES (?, ?)"""
         cur = self.con.cursor()
         cur.execute('begin transaction;')
         try:
-            if not self.tagCBox.itemData(index, ID):
-                id_tag = add_tag(self.tagCBox.itemText(index), cur)
-                self.tagCBox.setItemData(index, id_tag, ID)
-            else:
-                id_tag = self.tagCBox.itemData(index, ID)
-            cur.execute(insert_article_tag, [self._currentOpenedPageID[1], id_tag])
+            cur.execute(insert_article_tag, [self._currentOpenedPageID[1], self.tagCBox.itemData(index, Qt.UserRole)])
         except sql.DatabaseError:
             self.con.rollback()
             logger.warning('Ошибка установки тега {}\n{}'.format(
-                self.tagCBox.itemText(index), traceback.format_exc()))
+                self.tagCBox.itemText(index), traceback.format_exc())
+            )
         else:
             self.con.commit()
-            self.articleTagsHBox.insertWidget(self.articleTagsHBox.count() - 1,
-                                              ArticleTag(self.tagCBox.itemText(index)))
+            self.articleTagsHBox.insertWidget(
+                self.articleTagsHBox.count() - 1,
+                ArticleTag(self.tagCBox.itemText(index))
+            )
             self.update_articleTagModel()
         finally:
-            self.tagCBox.setCurrentIndex(-1)
             cur.close()
 
     @pyqtSlot()
@@ -610,7 +607,6 @@ class Pocket(MainWindow):
         try:
             self.create_articleTagModel()
             self.ui.tagsView.setCurrentIndex(self.ui.tagsView.model().index(0, 0))
-            self.create_cbx_model()
         except Exception:
             logger.exception('Exception in load_data_from_db')
 
@@ -846,16 +842,21 @@ class Pocket(MainWindow):
         for tag in tags:
             self.articleTagsHBox.insertWidget(
                 self.articleTagsHBox.count() - 1, ArticleTag(tag[0]))
+
         try:
             os.unlink(self._tmphtmlfile)
         except (OSError, TypeError):
             pass
+
         _, self._tmphtmlfile = tempfile.mkstemp(suffix='.html', text=False)
         with open(self._tmphtmlfile, 'w') as fh:
             fh.write(html)
+
         self.ui.webView.load(QUrl.fromLocalFile(self._tmphtmlfile))
         self.ui.pageTitleLabel.setText(index.data())
-        self.ui.urlLabel.setText(url)
+        self.ui.urlLabel.setText(f'<a href="{url}">{url}</a>')
+        self.tagCBox.setEnabled(True)
+
         self._currentOpenedPageID = (index.row(), index.data(ID))
         curTagviewIdx = self.ui.tagsView.currentIndex()
         self._currentOpenedTagID = (
