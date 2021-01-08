@@ -591,17 +591,6 @@ class Pocket(MainWindow):
             cur.close()
 
     @pyqtSlot()
-    def create_cbx_model(self):
-        """Модель для комбобокса"""
-        self.tagCBoxModel.clear()
-        cur = self.con.cursor()
-        for tag in cur.execute("""select id, tag from tags order by lower(tag);"""):
-            item = QStandardItem(tag[1])
-            item.setData(tag[0], ID)
-            self.tagCBoxModel.appendRow(item)
-        self.tagCBox.setCurrentIndex(-1)
-
-    @pyqtSlot()
     def load_data_from_db(self):
         """Зазрузка заголовков и тегов статей"""
         try:
