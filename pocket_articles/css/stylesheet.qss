@@ -19,7 +19,7 @@
 }
 
 /* СТРОКИ РЕДАКТИРОВАНИЯ ДЛЯ ФИЛЬТРА И ПОИСКА ПО БАЗЕ */
-/*#filterArticleLineEdit, #dbSearch, #tagFilterLineEdit {*/
+/*#filterArticleLineEdit, #dbSearchLineEdit, #tagFilterLineEdit {*/
 /*    border-width: 1px;*/
 /*    border-style: outset;*/
 /*    border-radius: 10px;*/
@@ -288,7 +288,7 @@ QTreeView, QTableView {
 ************************************************************************
 ***********************************************************************/
 #filterArticleLineEdit,
-#dbSearch,
+#dbSearchLineEdit,
 #tagFilterLineEdit,
 ArticleTag,
 QComboBox

@@ -1,4 +1,5 @@
 # todo:
+#   ИСПОЛЬЗОВАТЬ SELECTIONMODEL В ОБОЗРЕВАТЕЛЕ ТЕГОВ? ТОГДА МОЖНО БУДЕТ УБРАТЬ ЛИШНИЕ ПРОВЕРКИ.
 #   ДОБАВИТЬ ВОЗМОЖНОСТЬ РЕДАКТИРОВАНИЯ НАЗВАНИЯ СТАТЕЙ.
 #   сделать что-то с выбором тегов в браузере тегов(чтобы выбирались только актуальные теги)
 #   переделать resetCurrentState
@@ -60,7 +61,6 @@ class Pocket(MainWindow):
         super(Pocket, self).__init__(parent)
         self.connect_slots()
         self.load_data_from_db()
-        self.loadLastOpenedPage()
 
     def connect_slots(self):
         """Подключение слотов"""
@@ -103,17 +103,16 @@ class Pocket(MainWindow):
 
         # фильтр заголовков
         self.ui.filterArticleLineEdit.returnPressed.connect(self.set_filter_article_title)
-        self.ui.filterArticleLineEdit.returnPressed.connect(self.ui.dbSearch.clear)
+        self.ui.filterArticleLineEdit.returnPressed.connect(self.ui.dbSearchLineEdit.clear)
         self.ui.filterArticleLineEdit.returnPressed.connect(self.ui.tagFilterLineEdit.clear)
 
         # выбор по тегу
-        self.ui.tagsView.clicked.connect(self.tag_selected)
-        self.ui.tagsView.clicked.connect(self.resetCurrentState)
+        self.ui.tagsView.selectionModel().currentChanged.connect(self.tag_selected)
 
         # поиск по базе
-        self.ui.dbSearch.returnPressed.connect(self.db_search)
-        self.ui.dbSearch.returnPressed.connect(self.ui.filterArticleLineEdit.clear)
-        self.ui.dbSearch.returnPressed.connect(self.ui.tagFilterLineEdit.clear)
+        self.ui.dbSearchLineEdit.returnPressed.connect(self.db_search)
+        self.ui.dbSearchLineEdit.returnPressed.connect(self.ui.filterArticleLineEdit.clear)
+        self.ui.dbSearchLineEdit.returnPressed.connect(self.ui.tagFilterLineEdit.clear)
 
         # активируем панель поиска на странице
         QShortcut(QKeySequence.Find, self, self.searchPanel.show)
@@ -128,65 +127,8 @@ class Pocket(MainWindow):
         self.ui.actionImportTags.triggered.connect(self.import_tags)
         # фильтр к тегам
         self.ui.tagFilterLineEdit.textChanged.connect(self.tagProxyModel.setFilterRegExp)
-
-    def resetCurrentState(self, idx: QModelIndex):
-        """Сбрасываем текущее состояние.
-
-        Удаляем данные о последней открытой статье, строки поиска и фильтра.
-        """
-        if not idx.isValid() or idx.data(ID) in self.IgnoredTagList or idx.data(ID) is None:
-            return
-        if self.ui.tagFilterLineEdit.text():
-            return
-        self._currentOpenedPageID = None
-        self._currentOpenedTagID = None
-        self._titleFilter = None
-        self._searchText = None
-        self._tagFilter = None
-        self.ui.tagFilterLineEdit.clear()
-        self.ui.dbSearch.clear()
-        self.ui.filterArticleLineEdit.clear()
-        self._currentSortOrder = None
-        self.tagCBox.setDisabled(True)
-
-    def loadLastOpenedPage(self):
-        """Открываем последнюю активную статью в предыдущем сеансе."""
-        if self._currentOpenedPageID is None or self._currentOpenedTagID is None:
-            return
-
-        # устанавливаем сортировку, если она была изменена
-        if self._currentSortOrder:
-            for act in self.sortGroup.actions():
-                if act.objectName() == self._currentSortOrder:
-                    act.setChecked(True)
-                    act.triggered.emit()
-                    break
-
-        # устанавливаем фильтр или строку поиска по базе
-        if any([self._searchText, self._titleFilter]):
-            if self._titleFilter:
-                self.ui.filterArticleLineEdit.setText(self._titleFilter)
-                self.ui.filterArticleLineEdit.returnPressed.emit()
-            elif self._searchText:
-                self.ui.dbSearch.setText(self._searchText)
-                self.ui.dbSearch.returnPressed.emit()
-        else:
-            # устанавливаем фильтр в обзоре тегов
-            if self._tagFilter:
-                self.ui.tagFilterLineEdit.setText(self._tagFilter)
-            tagIdx = self.ui.tagsView.model().index(
-                self._currentOpenedTagID[0], self._currentOpenedTagID[1],
-                self.ui.tagsView.model().index(self._currentOpenedTagID[2], self._currentOpenedTagID[-1])
-            )
-            self.ui.tagsView.setCurrentIndex(tagIdx)
-            self.tag_selected(tagIdx)
-
-        # устанавливаем текущий индекс статьи
-        pageIdx = self.ui.articleView.model().index(self._currentOpenedPageID[0], 1)
-        if pageIdx.isValid():
-            self.ui.articleView.setCurrentIndex(pageIdx)
-            self.ui.articleView.scrollTo(pageIdx)
-            self.open_webpage(pageIdx)
+        self.ui.tagFilterLineEdit.editingFinished.connect(self.ui.filterArticleLineEdit.clear)
+        self.ui.tagFilterLineEdit.editingFinished.connect(self.ui.dbSearchLineEdit.clear)
 
     @pyqtSlot()
     def import_tags(self):
@@ -375,9 +317,9 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def highlight_searched_text(self):
         """Подсветка текста, по которому производили поиск по базе"""
-        if self.ui.dbSearch.text() == '':
+        if self.ui.dbSearchLineEdit.text() == '':
             return
-        text = self.ui.dbSearch.text().replace('"', '').replace('*', '')
+        text = self.ui.dbSearchLineEdit.text().replace('"', '').replace('*', '')
         self.ui.webView.findText(text)
 
     @pyqtSlot(str, QWebEnginePage.FindFlag)
@@ -437,15 +379,15 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def delete_article_tag(self, tag: str):
         """Удаляет тег у статьи в базе"""
-        if not self.ui.articleView.currentIndex().isValid():
-            return
-        cur_index = self.ui.articleView.currentIndex()
+        # if not self.ui.articleView.currentIndex().isValid():
+        #     return
+        # cur_index = self.ui.articleView.currentIndex()
         sql_request = """
             delete from webpagetags where id_page=? and 
             id_tag=(select id from tags where tag = ?);
             """
         try:
-            self.con.execute(sql_request, [cur_index.data(ID), tag])
+            self.con.execute(sql_request, [self._currentOpenedPageID[1], tag])
             self.con.commit()
             self.update_articleTagModel()
         except sql.Error:
@@ -504,7 +446,7 @@ class Pocket(MainWindow):
 
     @pyqtSlot()
     def db_search(self):
-        txt = self.ui.dbSearch.text()
+        txt = self.ui.dbSearchLineEdit.text()
         # устанавливаем текущий курсор на первый индекс тегов.
         self.ui.tagsView.setCurrentIndex(
             self.ui.tagsView.model().index(0, 0)
@@ -525,7 +467,7 @@ class Pocket(MainWindow):
     @pyqtSlot(QModelIndex)
     def tag_selected(self, index: QModelIndex):
         """Открываем статьи с выбранным тегом в дереве дегов."""
-        if not index.isValid() or index.data(ID) in self.IgnoredTagList or index.data(ID) is None:
+        if not index.isValid():
             return
         tagID = index.data(ID)
         if tagID == 'all_articles':
@@ -845,17 +787,7 @@ class Pocket(MainWindow):
         self.ui.pageTitleLabel.setText(index.data())
         self.ui.urlLabel.setText(f'<a href="{url}">{url}</a>')
         self.tagCBox.setEnabled(True)
-
         self._currentOpenedPageID = (index.row(), index.data(ID))
-        curTagviewIdx = self.ui.tagsView.currentIndex()
-        self._currentOpenedTagID = (
-            curTagviewIdx.row(), curTagviewIdx.column(),
-            curTagviewIdx.parent().row(), curTagviewIdx.parent().column()
-        )
-        self._currentSortOrder = self.sortGroup.checkedAction().objectName()
-        self._titleFilter = self.ui.filterArticleLineEdit.text()
-        self._tagFilter = self.ui.tagFilterLineEdit.text()
-        self._searchText = self.ui.dbSearch.text()
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:
@@ -870,16 +802,8 @@ class Pocket(MainWindow):
         event.accept()
 
     def save_status(self):
-        dbpath = os.path.relpath(self.database, os.path.dirname(__file__))
-        statusDict = dict(
-            dbase=dbpath,
-            articleID=self._currentOpenedPageID,
-            tagID=self._currentOpenedTagID,
-            sortOrder=self._currentSortOrder,
-            filter=self._titleFilter,
-            search=self._searchText,
-            tagFilter=self._tagFilter
-        )
+        dbpath = os.path.abspath(self.database)
+        statusDict = dict(dbase=dbpath)
         with open(self.configFile, 'w') as fh:
             json.dump(statusDict, fh, ensure_ascii=False, indent=4)
 
@@ -892,8 +816,8 @@ def main():
     from qtl18n_ru import localization
     localization.setupRussianLang(app)
 
-    # fh = QFile(':/css/stylesheet.qss')
-    fh = QFile('/home/alexandr/PycharmProjects/Pocket/pocket_articles/css/stylesheet.qss')
+    fh = QFile(':/css/stylesheet.qss')
+    # fh = QFile('/home/alexandr/PycharmProjects/Pocket/pocket_articles/css/stylesheet.qss')
     if fh.open(QIODevice.ReadOnly | QIODevice.Text):
         app.setStyleSheet(QTextStream(fh).readAll())
 

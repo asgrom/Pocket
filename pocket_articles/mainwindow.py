@@ -25,7 +25,6 @@ class MainWindow(QMainWindow):
 
     database = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data/articles.db')
     configFile = os.path.join(os.path.dirname(__file__), 'config/config.json')
-    IgnoredTagList = ['line', 'tags']
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
@@ -35,14 +34,6 @@ class MainWindow(QMainWindow):
         # текущая открытая статья ID
         # tuple(строка, id в базе)
         self._currentOpenedPageID = None
-        # tuple(row, column, parent.row, parent.column)
-        self._currentOpenedTagID = None
-        # objectName sortGroup menu action
-        self._currentSortOrder = None
-        self._titleFilter = None
-        self._searchText = None
-        self._tagFilter = None
-
         self.config_parser()
         # создание соединения с базой данных
         self.con = connect(self.database)
@@ -60,22 +51,12 @@ class MainWindow(QMainWindow):
             with open(self.configFile) as fh:
                 statusDict = json.load(fh)
             if statusDict.get('dbase') is not None:
-                self.database = os.path.abspath(
-                    os.path.join(
-                        os.path.dirname(__file__),
-                        statusDict.get('dbase'))
-                )
-            self._currentSortOrder = statusDict.get('sortOrder')
-            self._currentOpenedTagID = statusDict.get('tagID')
-            self._currentOpenedPageID = statusDict.get('articleID')
-            self._titleFilter = statusDict.get('filter')
-            self._searchText = statusDict.get('search')
-            self._tagFilter = statusDict.get('tagFilter')
+                self.database = os.path.abspath(statusDict.get('dbase'))
 
     def initUI(self):
         """Инициализация основных элементов интерфеса"""
         # иконка лупы в строке поиска по базе
-        self.ui.dbSearch.addAction(QIcon(':/images/search-50.svg'), QLineEdit.LeadingPosition)
+        self.ui.dbSearchLineEdit.addAction(QIcon(':/images/search-50.svg'), QLineEdit.LeadingPosition)
         # иконка в строку фильтра
         self.ui.filterArticleLineEdit.addAction(
             QIcon(':/images/filter_list.svg'),

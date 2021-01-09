@@ -181,7 +181,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QLineEdit" name="dbSearch">
+            <widget class="QLineEdit" name="dbSearchLineEdit">
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Поиск по части слова: &lt;span style=&quot; font-weight:600;&quot;&gt;программ*&lt;/span&gt; (программа, программирование...).&lt;/p&gt;&lt;p&gt;Словосочетание с дефисом: &lt;span style=&quot; font-weight:600;&quot;&gt;&amp;quot;медиа-сервер&amp;quot;&lt;/span&gt; (заключить в кавычки).&lt;/p&gt;&lt;p&gt;Найти словосочетание: &lt;span style=&quot; font-weight:600;&quot;&gt;&amp;quot;вкусный обед&amp;quot;&lt;/span&gt; (заключить в кавычки).&lt;/p&gt;&lt;p&gt;Словосочетание: &lt;span style=&quot; font-weight:600;&quot;&gt;вкусный обед&lt;/span&gt; (найдет в любом порядке).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
