@@ -79,7 +79,7 @@ class Pocket(MainWindow):
 
         # импортированы новые html
         self.htmlImported.connect(self.articleTitleModel.resetModel)
-        self.htmlImported.connect(self.articleTagModel.completeModel)
+        self.htmlImported.connect(self.articleTagModel.updateModel)
 
         # контекстное меню дерева тегов
         self.ui.tagsView.customContextMenuRequested.connect(self.tagViewContextMenuRequested)
@@ -92,16 +92,16 @@ class Pocket(MainWindow):
 
         # меню сортировки статей
         self.ui.actionSortTitleAsc.triggered.connect(
-            lambda _, col='title', order='asc': self.articleTitleModel.changeSortOrder(col, order)
+            lambda: self.articleTitleModel.changeSortOrder('title', 'asc')
         )
         self.ui.actionSortTitleDesc.triggered.connect(
-            lambda _, col='title', order='desc': self.articleTitleModel.changeSortOrder(col, order)
+            lambda: self.articleTitleModel.changeSortOrder('title', 'desc')
         )
         self.ui.actionSortDateAsc.triggered.connect(
-            lambda _, col='time_saved', order='asc': self.articleTitleModel.changeSortOrder(col, order)
+            lambda: self.articleTitleModel.changeSortOrder('time_saved', 'asc')
         )
         self.ui.actionSortDateDesc.triggered.connect(
-            lambda _, col='time_saved', order='desc': self.articleTitleModel.changeSortOrder(col, order)
+            lambda: self.articleTitleModel.changeSortOrder('time_saved', 'desc')
         )
 
         # выбор статьи для просмотра
@@ -127,18 +127,33 @@ class Pocket(MainWindow):
         # активируем панель поиска на странице
         QShortcut(QKeySequence.Find, self, self.searchPanel.show)
 
+        # подсветка поискового слова
         self.ui.webView.loadFinished.connect(self.highlight_searched_text)
+
+        # скрытие урла страницы, а также смена иконки кнопки
         self.ui.urlToolButton.toggled.connect(self.show_url_label)
         self.ui.urlToolButton.toggled.connect(self.change_urlToolButton_icon)
+
         # экспорт таблицы тегов
         self.ui.actionExportTagsTable.triggered.connect(self.export_tags_table)
+
         # экспорт таблицы webpagetags
         self.ui.actionExportArticleTags.triggered.connect(self.export_article_tags)
         self.ui.actionImportTags.triggered.connect(self.import_tags)
-        # фильтр к тегам
+
+        # фильтр к тегам в обозревателе тегов
         self.ui.tagFilterLineEdit.textChanged.connect(self.tagProxyModel.setFilterRegExp)
         self.ui.tagFilterLineEdit.editingFinished.connect(self.ui.filterArticleLineEdit.clear)
         self.ui.tagFilterLineEdit.editingFinished.connect(self.ui.dbSearchLineEdit.clear)
+
+        # удален тег из обозревателя тегов
+        self.ui.tagsView.model().rowsRemoved.connect(self.tagCBox.completeModel)
+
+    def testConnection(self):
+        print('signal connected main class')
+        r = QMessageBox.question(self, '', 'expand?', defaultButton=QMessageBox.Yes)
+        if r == QMessageBox.Yes:
+            self.ui.tagsView.expandAll()
 
     @pyqtSlot()
     def import_tags(self):
@@ -246,13 +261,9 @@ class Pocket(MainWindow):
             self.con.execute('delete from tags where id = ?', [index.data(ID)])
             self.con.commit()
             logger.info(f'Удален тег {index.data(Qt.DisplayRole)}')
-            modelIndex = self.tagProxyModel.mapToSource(index)
-            self.articleTagModel.removeRow(modelIndex.row(), modelIndex.parent())
-            self.tagCBox.completeModel()
+            self.ui.tagsView.model().removeRow(index.row(), index.parent())
         except sql.DatabaseError:
             logger.exception('Ошибка удаления тега')
-        else:
-            self.tagChanged.emit()
         finally:
             QApplication.restoreOverrideCursor()
 
@@ -540,7 +551,7 @@ class Pocket(MainWindow):
             return
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            count = self.write_data_webpages_table(html_dir)
+            count = self.add_html_to_db(html_dir)
             QMessageBox.information(self, "Имрортирование завершено", f'{count} статей импортировано', QMessageBox.Ok)
             self.ui.statusbar.showMessage(f'{count} статей импортировано в базу данных')
             self.htmlImported.emit()
@@ -563,7 +574,7 @@ class Pocket(MainWindow):
             return
 
     @pyqtSlot()
-    def write_data_webpages_table(self, html_dir):
+    def add_html_to_db(self, html_dir):
         """Запись веб-страниц в базу данных"""
         count = 0
         self.con.execute("""begin transaction;""")

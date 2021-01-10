@@ -17,7 +17,14 @@ class TagModel(QStandardItemModel):
     def __init__(self, con: sqlite3.Connection):
         super(TagModel, self).__init__(parent=None)
         self.con = con
+        self.connectSignals()
         self.completeModel()
+
+    def connectSignals(self):
+        self.rowsRemoved.connect(self.updateModel)
+
+    def testConnection(self):
+        print('signal connected')
 
     @pyqtSlot(sqlite3.Connection)
     def setDatabaseConnector(self, con: sqlite3.Connection):
