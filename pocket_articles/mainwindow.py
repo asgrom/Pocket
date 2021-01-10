@@ -1,5 +1,6 @@
 import json
 import os
+import sqlite3
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -13,15 +14,13 @@ from .searchpanel import SearchPanel
 from .tablemodel import TableModel
 from .tagcombobox import TagsComboBox
 from .treeviewproxymodel import TreeViewProxyModel
+from .tagmodel import TagModel
 
 
 class MainWindow(QMainWindow):
-    htmlImportedSignal = pyqtSignal()
-
-    notags_req = """
-        select count(id) from webpages
-        where id not in
-        (select id_page from webpagetags);"""
+    htmlImported = pyqtSignal()
+    tagChanged = pyqtSignal()
+    databaseChanged = pyqtSignal(sqlite3.Connection)
 
     database = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data/articles.db')
     configFile = os.path.join(os.path.dirname(__file__), 'config/config.json')
@@ -75,7 +74,7 @@ class MainWindow(QMainWindow):
         ################################################################################
         # отображение списка статей
         ################################################################################
-        self.articleTitleModel = TableModel(self.con.cursor())
+        self.articleTitleModel = TableModel(self.con)
         self.articleTitleModel.setObjectName('ArticleList')
         self.ui.articleView.setSortingEnabled(False)
         self.ui.articleView.verticalHeader().setVisible(True)
@@ -87,7 +86,7 @@ class MainWindow(QMainWindow):
         ################################################################################
         # отображение списка тегов статей
         ################################################################################
-        self.articleTagModel = QStandardItemModel()
+        self.articleTagModel = TagModel(self.con)
         self.ui.tagsView.setItemDelegate(Delegate())
         self.ui.tagsView.header().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.ui.tagsView.setHeaderHidden(True)
@@ -97,6 +96,7 @@ class MainWindow(QMainWindow):
         # noinspection PyTypeChecker
         self.tagProxyModel.setSourceModel(self.articleTagModel)
         self.ui.tagsView.setModel(self.tagProxyModel)
+        self.ui.tagsView.expandAll()
 
         ################################################################################
         # HBoxLayout с комбобоксом со списком тегов и теги выбранной статьи

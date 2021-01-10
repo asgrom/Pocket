@@ -46,6 +46,7 @@ class TagsComboBox(QComboBox):
             'padding-left: 5px;'
         )
 
+    @pyqtSlot()
     def completeModel(self):
         """Заполняем модель из базы."""
         self.model().clear()
@@ -82,6 +83,7 @@ class TagsComboBox(QComboBox):
         self.tagSelected.emit(self.currentIndex())
         self.setCurrentIndex(-1)
 
+    @pyqtSlot(sqlite3.Connection)
     def setDatabaseConnector(self, con: sqlite3.Connection):
         """Устанавливаем соединение с базой данных."""
         self.con = con

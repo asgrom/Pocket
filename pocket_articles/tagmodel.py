@@ -9,10 +9,15 @@ COUNT = Qt.UserRole + 1
 
 
 class TagModel(QStandardItemModel):
+    notags_req = """
+        select count(id) from webpages
+        where id not in
+        (select id_page from webpagetags);"""
 
     def __init__(self, con: sqlite3.Connection):
         super(TagModel, self).__init__(parent=None)
         self.con = con
+        self.completeModel()
 
     @pyqtSlot(sqlite3.Connection)
     def setDatabaseConnector(self, con: sqlite3.Connection):
@@ -56,11 +61,7 @@ class TagModel(QStandardItemModel):
 
     def create_notags_item(self):
         """Создает QStandardItem без тегов."""
-        notags_req = """
-            select count(id) from webpages
-            where id not in
-            (select id_page from webpagetags);"""
-        notags_count = self.con.execute(notags_req).fetchone()[0]
+        notags_count = self.con.execute(self.notags_req).fetchone()[0]
         notags = QStandardItem('Без тегов')
         notags.setData('notags', ID)
         notags.setData(notags_count, COUNT)
@@ -83,6 +84,7 @@ class TagModel(QStandardItemModel):
             tags.appendRow(item)
         return tags
 
+    @pyqtSlot()
     def completeModel(self):
         """Создание списка тегов статей"""
         self.clear()
@@ -107,3 +109,71 @@ class TagModel(QStandardItemModel):
                                  Qt.MatchExactly | Qt.MatchRecursive)[0]
             if tag_idx.data(COUNT) != count:
                 self.setData(tag_idx, count, COUNT)
+
+    @pyqtSlot()
+    def updateModel(self):
+        """Обновление данных в модели отображения тегов статей"""
+        #########################################################
+        # item "все статьи"
+        #########################################################
+        all_articles_count = self.con.execute(
+            'select count(id) from webpages;').fetchone()[0]
+
+        all_articles_item_idx = self.match(
+            self.index(0, 0), ID,
+            'all_articles', 1, Qt.MatchExactly)[0]
+
+        if all_articles_item_idx.data(COUNT) != all_articles_count:
+            self.setData(
+                all_articles_item_idx, all_articles_count, COUNT
+            )
+        #########################################################
+        # item "без тегов"
+        #########################################################
+        notags_count = self.con.execute(self.notags_req).fetchone()[0]
+
+        notags_idx = self.match(
+            self.index(0, 0), ID,
+            'notags', 1, Qt.MatchExactly)[0]
+
+        if notags_idx.data(COUNT) != notags_count:
+            self.setData(notags_idx, notags_count, COUNT)
+        #########################################################
+        # item "избранное"
+        #########################################################
+        favorites_count = self.con.execute(
+            """
+            select count(id_page) from webpagetags
+            where id_tag =
+            (select id from tags where tag="Избранное");
+            """).fetchone()[0]
+
+        favorites_idx = self.match(
+            self.index(0, 0), Qt.DisplayRole,
+            'Избранное', 1, Qt.MatchExactly)[0]
+
+        if favorites_idx.data(COUNT) != favorites_count:
+            self.setData(favorites_idx, favorites_count, COUNT)
+        #########################################################
+        # item "теги"
+        #########################################################
+        tags_item_idx = self.match(
+            self.index(0, 0), ID,
+            'tags', 1, Qt.MatchExactly)[0]
+
+        for tag, id_ in self.con.execute('select tag, id from tags'):
+            tag_item_idx = self.match(
+                self.index(0, 0), ID,
+                id_, 1, Qt.MatchExactly | Qt.MatchRecursive)
+
+            count = self.con.execute(
+                """select count(id_page) from webpagetags where id_tag=?;""",
+                [id_]).fetchone()[0]
+
+            if not tag_item_idx:
+                item = QStandardItem(tag)
+                item.setData(id_, ID)
+                item.setData(count, COUNT)
+                self.itemFromIndex(tags_item_idx).appendRow([item])
+            elif tag_item_idx[0].data(COUNT) != count:
+                self.setData(tag_item_idx[0], count, COUNT)

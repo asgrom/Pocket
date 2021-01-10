@@ -12,14 +12,14 @@ logger = applogger.get_logger(__name__)
 class TableModel(QAbstractTableModel):
     query = """select time_saved, title, id from webpages order by lower({}) {} limit ? offset ?"""
 
-    def __init__(self, cursor: sqlite3.Cursor, number_rows=100, parent: QWidget = None):
+    def __init__(self, cursor: sqlite3.Connection, number_rows=100, parent: QWidget = None):
         """
         Args:
             cursor (sqlite3.Cursor): Соединение с базой данных.
             number_rows (str): Количество строк, получаемых из базы за один запрос, (default 100)
         """
         super(TableModel, self).__init__(parent)
-        self.cur = cursor
+        self.con = cursor
         self.number_rows = number_rows  # количество строк для считывания из базы
         self.sortColumn = 'time_saved'
         self.order = 'desc'
@@ -39,15 +39,15 @@ class TableModel(QAbstractTableModel):
         self.endResetModel()
 
     @pyqtSlot(sqlite3.Cursor)
-    def setCursor(self, cur: sqlite3.Cursor):
+    def setDatabaseConnector(self, con: sqlite3.Connection):
         """Устанавливает курсор базы данных.
 
         Устанавливаем новый курсор базы при ее смене из меню пользователя.
 
         Args:
-            cur (sqlite3.Cursor):
+            con (sqlite3.Connection):
         """
-        self.cur = cur
+        self.con = con
         self.resetModel()
 
     @pyqtSlot()
@@ -117,7 +117,7 @@ class TableModel(QAbstractTableModel):
             parent (QModelIndex):
         """
         try:
-            self.chunkData = self.cur.execute(self.query.format(self.sortColumn, self.order),
+            self.chunkData = self.con.execute(self.query.format(self.sortColumn, self.order),
                                               [self.number_rows, self._offset]).fetchall()
         except sqlite3.ProgrammingError:
             return False

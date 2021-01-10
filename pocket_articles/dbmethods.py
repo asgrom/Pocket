@@ -32,9 +32,9 @@ def connect(db: str) -> sql.Connection:
         conn.executescript("pragma foreign_keys=on;")
         create_tables(conn)
         return conn
-    except sql.Error:
+    except sql.Error as e:
         logger.exception(f'Exception in connect to dbase\nDatabase file: {db}')
-        sys.exit()
+        raise e
 
 
 def export_tags_table(con: sql.Connection):

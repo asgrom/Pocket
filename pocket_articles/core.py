@@ -60,7 +60,6 @@ class Pocket(MainWindow):
     def __init__(self, parent=None):
         super(Pocket, self).__init__(parent)
         self.connect_slots()
-        self.load_data_from_db()
 
     def connect_slots(self):
         """Подключение слотов"""
@@ -68,8 +67,19 @@ class Pocket(MainWindow):
         self.ui.actionImportHtml.triggered.connect(self.import_html)
         self.ui.actionNewDB.triggered.connect(self.create_new_db)
         self.ui.actionOpenDbase.triggered.connect(self.open_other_db)
-        self.htmlImportedSignal.connect(self.load_data_from_db)
         self.searchPanel.searched.connect(self.search_on_page)
+
+        # обновляем модель обозревателя тегов
+        self.tagChanged.connect(self.articleTagModel.updateModel)
+
+        # новое соединение с базой данных
+        self.databaseChanged.connect(self.tagCBox.setDatabaseConnector)
+        self.databaseChanged.connect(self.articleTagModel.setDatabaseConnector)
+        self.databaseChanged.connect(self.articleTitleModel.setDatabaseConnector)
+
+        # импортированы новые html
+        self.htmlImported.connect(self.articleTitleModel.resetModel)
+        self.htmlImported.connect(self.articleTagModel.completeModel)
 
         # контекстное меню дерева тегов
         self.ui.tagsView.customContextMenuRequested.connect(self.tagViewContextMenuRequested)
@@ -224,74 +234,6 @@ class Pocket(MainWindow):
             self.ui.urlToolButton.setIcon(QIcon(':/images/expand-arrow.png'))
 
     @pyqtSlot()
-    def update_articleTagModel(self):
-        """Обновление данных в модели отображения тегов статей"""
-        #########################################################
-        # item "все статьи"
-        #########################################################
-        all_articles_count = self.con.execute(
-            'select count(id) from webpages;').fetchone()[0]
-
-        all_articles_item_idx = self.articleTagModel.match(
-            self.articleTagModel.index(0, 0), ID,
-            'all_articles', 1, Qt.MatchExactly)[0]
-
-        if all_articles_item_idx.data(COUNT) != all_articles_count:
-            self.articleTagModel.setData(
-                all_articles_item_idx, all_articles_count, COUNT
-            )
-        #########################################################
-        # item "без тегов"
-        #########################################################
-        notags_count = self.con.execute(self.notags_req).fetchone()[0]
-
-        notags_idx = self.articleTagModel.match(
-            self.articleTagModel.index(0, 0), ID,
-            'notags', 1, Qt.MatchExactly)[0]
-
-        if notags_idx.data(COUNT) != notags_count:
-            self.articleTagModel.setData(notags_idx, notags_count, COUNT)
-        #########################################################
-        # item "избранное"
-        #########################################################
-        favorites_count = self.con.execute(
-            """
-            select count(id_page) from webpagetags
-            where id_tag =
-            (select id from tags where tag="Избранное");
-            """).fetchone()[0]
-
-        favorites_idx = self.articleTagModel.match(
-            self.articleTagModel.index(0, 0), Qt.DisplayRole,
-            'Избранное', 1, Qt.MatchExactly)[0]
-
-        if favorites_idx.data(COUNT) != favorites_count:
-            self.articleTagModel.setData(favorites_idx, favorites_count, COUNT)
-        #########################################################
-        # item "теги"
-        #########################################################
-        tags_item_idx = self.articleTagModel.match(
-            self.articleTagModel.index(0, 0), ID,
-            'tags', 1, Qt.MatchExactly)[0]
-
-        for tag, id_ in self.con.execute('select tag, id from tags'):
-            tag_item_idx = self.articleTagModel.match(
-                self.articleTagModel.index(0, 0), ID,
-                id_, 1, Qt.MatchExactly | Qt.MatchRecursive)
-
-            count = self.con.execute(
-                """select count(id_page) from webpagetags where id_tag=?;""",
-                [id_]).fetchone()[0]
-
-            if not tag_item_idx:
-                item = QStandardItem(tag)
-                item.setData(id_, ID)
-                item.setData(count, COUNT)
-                self.articleTagModel.itemFromIndex(tags_item_idx).appendRow([item])
-            elif tag_item_idx[0].data(COUNT) != count:
-                self.articleTagModel.setData(tag_item_idx[0], count, COUNT)
-
-    @pyqtSlot()
     def delete_tag_from_tagView(self):
         res = QMessageBox.question(self, 'Подтвердить', 'Удалить тег?')
         if res == QMessageBox.No:
@@ -310,7 +252,7 @@ class Pocket(MainWindow):
         except sql.DatabaseError:
             logger.exception('Ошибка удаления тега')
         else:
-            self.update_articleTagModel()
+            self.tagChanged.emit()
         finally:
             QApplication.restoreOverrideCursor()
 
@@ -341,12 +283,15 @@ class Pocket(MainWindow):
                                                  "SQLite (*.sqlite *.sqlite3 *.db);;All (*)")
         if not db_path:
             return
-        self.con.close()
-        self.con = connect(db_path)
-        self.database = db_path
-        self.articleTitleModel.setCursor(self.con.cursor())
-        self.tagCBox.setDatabaseConnector(self.con)
-        self.htmlImportedSignal.emit()
+        try:
+            self.con.close()
+            self.con = connect(db_path)
+            self.database = db_path
+        except Exception:
+            logger.exception('Ошибка соединения с базой')
+            QMessageBox.critical(self, '', 'Ошибка соединения с базой данных')
+        else:
+            self.databaseChanged.emit(self.con)
 
     @pyqtSlot()
     def export_article_to_html(self):
@@ -389,7 +334,7 @@ class Pocket(MainWindow):
         try:
             self.con.execute(sql_request, [self._currentOpenedPageID[1], tag])
             self.con.commit()
-            self.update_articleTagModel()
+            self.tagChanged.emit()
         except sql.Error:
             logger.exception('Exception in delete_article_tag')
             self.con.rollback()
@@ -432,7 +377,7 @@ class Pocket(MainWindow):
             self.con.commit()
 
             # вызываем обновление количества статей с тегами.
-            self.update_articleTagModel()
+            self.tagChanged.emit()
 
             for idx in selectedRowsIdx:
                 self.articleTitleModel.removeRow(idx.row())
@@ -528,107 +473,9 @@ class Pocket(MainWindow):
                 self.articleTagsHBox.count() - 1,
                 ArticleTag(self.tagCBox.itemText(index))
             )
-            self.update_articleTagModel()
+            self.tagChanged.emit()
         finally:
             cur.close()
-
-    @pyqtSlot()
-    def load_data_from_db(self):
-        """Зазрузка заголовков и тегов статей"""
-        try:
-            self.create_articleTagModel()
-            self.ui.tagsView.setCurrentIndex(self.ui.tagsView.model().index(0, 0))
-        except Exception:
-            logger.exception('Exception in load_data_from_db')
-
-    def create_line_item(self):
-        """Создает QStandardItem с изображением линии."""
-        line = QStandardItem()
-        line.setData('line', ID)
-        line.setFlags(Qt.NoItemFlags)
-        return line
-
-    def create_favorites_item(self):
-        """Создает QStandardItem с избранным."""
-        favorites = QStandardItem('Избранное')
-        favorites_id = self.con.execute('select id from tags where tag="Избранное"').fetchone()
-        if not favorites_id:
-            favorites_id = self.con.execute('insert into tags (tag) values ("Избранное")').lastrowid
-            self.con.commit()
-        else:
-            favorites_id = favorites_id[0]
-        favorites.setData(favorites_id, ID)
-        favorites.setData(0, COUNT)
-        favorites.setIcon(QIcon(QPixmap(':/images/rating.png')))
-        favorites.setEditable(False)
-        return favorites
-
-    def create_tags_item(self, favorites_id):
-        """Создает QStandardItem с тегами."""
-        tags = QStandardItem('Теги')
-        tags.setFlags(Qt.NoItemFlags)
-        tags.setIcon(QIcon(QPixmap(':/images/tags.png')))
-        tags.setData('tags', ID)
-        for tag, _id in self.con.execute('select tag, id from tags;'):
-            if _id == favorites_id:
-                continue
-            item = QStandardItem('{0}'.format(tag))
-            item.setData(0, COUNT)
-            item.setData(_id, ID)
-            tags.appendRow(item)
-        return tags
-
-    def create_notags_item(self):
-        """Создает QStandardItem без тегов."""
-        notags_count = self.con.execute(self.notags_req).fetchone()[0]
-        # notags_count = 0 if not notags_count else notags_count[0]
-        notags = QStandardItem('Без тегов')
-        notags.setData('notags', ID)
-        notags.setData(notags_count, COUNT)
-        notags.setIcon(QIcon(QPixmap(':/images/view.png')))
-        notags.setEditable(False)
-        return notags
-
-    def create_all_articles_item(self):
-        """Создает QStandardItem все статьи."""
-        article_count = self.con.execute(
-            """
-            select count(id) from webpages;
-            """).fetchone()[0]
-        # article_count = 0 if not article_count else article_count[0]
-        all_articles = QStandardItem('Все статьи')
-        all_articles.setData('all_articles', ID)
-        all_articles.setData(article_count, COUNT)
-        all_articles.setIcon(QIcon(QPixmap(':/images/catalog.png')))
-        all_articles.setEditable(False)
-        return all_articles
-
-    @pyqtSlot()
-    def create_articleTagModel(self):
-        """Создание списка тегов статей"""
-        self.articleTagModel.clear()
-        line = self.create_line_item()
-        favorites = self.create_favorites_item()
-        tags = self.create_tags_item(favorites.data(ID))
-        notags = self.create_notags_item()
-        all_articles = self.create_all_articles_item()
-
-        self.articleTagModel.appendRow(all_articles)
-        self.articleTagModel.appendRow(line)
-        self.articleTagModel.appendRow(notags)
-        self.articleTagModel.appendRow(QStandardItem(line))
-        self.articleTagModel.appendRow(favorites)
-        self.articleTagModel.appendRow(QStandardItem(line))
-        self.articleTagModel.appendRow(tags)
-        for count, _id in self.con.execute("""
-                select count(tags.id), tags.id
-                from tags join webpageTags on tags.id = webpageTags.id_tag
-                group by tags.id;"""):
-            tag_idx = self.articleTagModel.match(self.articleTagModel.index(0, 0), ID, _id, 1,
-                                                 Qt.MatchExactly | Qt.MatchRecursive)[0]
-            if tag_idx.data(COUNT) != count:
-                self.articleTagModel.setData(tag_idx, count, COUNT)
-        self.ui.tagsView.setExpanded(self.tagProxyModel.mapFromSource(tags.index()), True)
 
     @pyqtSlot()
     def export_db_to_html(self):
@@ -656,30 +503,29 @@ class Pocket(MainWindow):
         """
         dbase_path, _ = QFileDialog.getSaveFileName(
             self, 'Файл базы данных', QStandardPaths.writableLocation(QStandardPaths.HomeLocation),
-            "SQLite (*.sqlite *.sql *.sqlite3, *.db);;All files (*)"
+            "SQLite (*.sqlite *.sql *.sqlite3 *.db);;All files (*)"
         )
         if not dbase_path:
             return
         if not os.path.splitext(dbase_path)[1]:
             dbase_path = os.path.splitext(dbase_path)[0] + '.db'
-        self.con.close()
         if os.path.exists(dbase_path):
             os.unlink(dbase_path)
-        self.con = connect(dbase_path)
-        self.database = dbase_path
 
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
+            self.con.close()
+            self.con = connect(dbase_path)
+            self.database = dbase_path
             self.ui.statusbar.showMessage('База данных создана')
             logger.info(f'Новая база данных создана {dbase_path}')
             QMessageBox.information(self, 'Готово', 'База данных создана')
-            self.import_html()
         except Exception:
             logger.exception('Exception in create new dbase')
             QMessageBox.critical(self, 'Ошибка', 'Ошибка создания базы данных')
+        else:
+            self.databaseChanged.emit(self.con)
         finally:
-            self.htmlImportedSignal.emit()
-            self.articleTitleModel.setCursor(self.con.cursor())
             QApplication.restoreOverrideCursor()
 
     @pyqtSlot()
@@ -697,12 +543,11 @@ class Pocket(MainWindow):
             count = self.write_data_webpages_table(html_dir)
             QMessageBox.information(self, "Имрортирование завершено", f'{count} статей импортировано', QMessageBox.Ok)
             self.ui.statusbar.showMessage(f'{count} статей импортировано в базу данных')
-            self.htmlImportedSignal.emit()
+            self.htmlImported.emit()
         except Exception:
             logger.exception('Exception in import_html')
             QMessageBox.critical(self, 'Ошибка', f'Ошибка импорта страниц')
         finally:
-            self.articleTitleModel.resetModel()
             QApplication.restoreOverrideCursor()
 
     @pyqtSlot()
@@ -724,7 +569,7 @@ class Pocket(MainWindow):
         self.con.execute("""begin transaction;""")
         try:
             for file in os.listdir(html_dir):
-                if file.endswith('html'):
+                if os.path.splitext(file)[1] == '.html':
                     filename = os.path.join(html_dir, file)
                     with open(filename) as f:
                         htmlContent = f.read()
