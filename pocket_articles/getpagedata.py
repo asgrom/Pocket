@@ -56,3 +56,9 @@ def get_data_from_page(page):
         #     saved_date = dp.parse(saved_date.group(1))
         #     saved_date = saved_date.strftime('%Y-%m-%d %H:%M:%S')
     return title, url, saved_date
+
+
+if __name__ == '__main__':
+    import sys
+    data = get_data_from_page(sys.argv[1])
+    print(data)
