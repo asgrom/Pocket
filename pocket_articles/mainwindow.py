@@ -13,8 +13,8 @@ from .mainui import Ui_MainUI
 from .searchpanel import SearchPanel
 from .tablemodel import TableModel
 from .tagcombobox import TagsComboBox
-from .treeviewproxymodel import TreeViewProxyModel
 from .tagmodel import TagModel
+from .treeviewproxymodel import TreeViewProxyModel
 
 
 class MainWindow(QMainWindow):

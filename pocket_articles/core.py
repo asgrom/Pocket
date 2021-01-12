@@ -678,6 +678,8 @@ class Pocket(MainWindow):
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        self.articleTitleModel.deleteLater()
+        self.articleTagModel.deleteLater()
         if self.con:
             self.con.close()
         try:

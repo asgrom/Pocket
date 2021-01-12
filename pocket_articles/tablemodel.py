@@ -120,6 +120,7 @@ class TableModel(QAbstractTableModel):
             self.chunkData = self.con.execute(self.query.format(self.sortColumn, self.order),
                                               [self.number_rows, self._offset]).fetchall()
         except sqlite3.ProgrammingError:
+            logger.exception('Exception occurred in canFetchMore')
             return False
         except sqlite3.Error:
             logger.exception('Exception sqlite query in canFetchMore')
