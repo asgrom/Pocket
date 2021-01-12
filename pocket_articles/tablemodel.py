@@ -51,16 +51,16 @@ class TableModel(QAbstractTableModel):
         self.resetModel()
 
     @pyqtSlot()
-    def changeSqlQuery(self, sql_query=None):
+    def changeSqlQuery(self, query=None):
         """Изменение sql-запроса
 
         Если запрос не задан, поизойдет сброс на дефолтный.
 
         Args:
-            sql_query (str): Запрос к базе данных.
+            query (str): Запрос к базе данных.
         """
         self.beginResetModel()
-        self.query = sql_query if sql_query else TableModel.query
+        self.query = query if query else TableModel.query
         self._offset = 0
         self.dbData.clear()
         self.endResetModel()
