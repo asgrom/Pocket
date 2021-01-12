@@ -23,7 +23,6 @@ import sqlite3 as sql
 import sys
 import tempfile
 import traceback
-from dataclasses import dataclass
 from datetime import datetime as dt
 
 from PyQt5.QtCore import *
@@ -38,6 +37,7 @@ from .dbmethods import (add_article, connect, export_articles)
 from .getpagedata import get_data_from_page, get_page_text_content
 from .mainwindow import MainWindow
 from .proxystyle import ProxyStyle
+from .sqlquery import SqlQuery
 
 logger = applogger.get_logger(__name__)
 
@@ -56,23 +56,18 @@ def log_uncaught_exceptions(ex_cls, ex, tb):
 sys.excepthook = log_uncaught_exceptions
 
 
-@dataclass(eq=False)
-class SortOrder:
-    """Тип сортировки."""
-    TitleAsc: int = 0
-    TitleDesc: int = 1
-    TimeAsc: int = 2
-    TimeDesc: int = 3
-
-
 class Pocket(MainWindow):
     """Класс содержит основные методы графического интерфейса."""
+    TitleAsc = 0
+    TitleDesc = 1
+    TimeAsc = 2
+    TimeDesc = 3
 
     def __init__(self, parent=None):
         super(Pocket, self).__init__(parent)
         self._currentOpenedPageID = None
         self._tmphtmlfile = None
-        self.sortOrder = SortOrder.TimeDesc
+        self.sortOrder = self.TimeDesc
         self.connect_slots()
 
     def connect_slots(self):
@@ -105,18 +100,23 @@ class Pocket(MainWindow):
         self.exportArticleAction.triggered.connect(self.export_article_to_html)
 
         # меню сортировки статей
-        self.ui.actionSortTitleAsc.triggered.connect(
-            lambda: self.articleTitleModel.changeSortOrder('title', 'asc')
-        )
-        self.ui.actionSortTitleDesc.triggered.connect(
-            lambda: self.articleTitleModel.changeSortOrder('title', 'desc')
-        )
-        self.ui.actionSortDateAsc.triggered.connect(
-            lambda: self.articleTitleModel.changeSortOrder('time_saved', 'asc')
-        )
-        self.ui.actionSortDateDesc.triggered.connect(
-            lambda: self.articleTitleModel.changeSortOrder('time_saved', 'desc')
-        )
+        self.sortGroup.triggered.connect(self.sortMenuTriggered)
+        # self.ui.actionSortTitleAsc.triggered.connect(
+        #     # lambda: self.articleTitleModel.changeSortOrder('title', 'asc')
+        #     lambda: self.sortMenuTriggered(self.TitleAsc)
+        # )
+        # self.ui.actionSortTitleDesc.triggered.connect(
+        #     # lambda: self.articleTitleModel.changeSortOrder('title', 'desc')
+        #     lambda: self.sortMenuTriggered(self.TitleDesc)
+        # )
+        # self.ui.actionSortDateAsc.triggered.connect(
+        #     # lambda: self.articleTitleModel.changeSortOrder('time_saved', 'asc')
+        #     lambda : self.sortMenuTriggered(self.TimeAsc)
+        # )
+        # self.ui.actionSortDateDesc.triggered.connect(
+        #     # lambda: self.articleTitleModel.changeSortOrder('time_saved', 'desc')
+        #     lambda: self.sortMenuTriggered(self.TimeDesc)
+        # )
 
         # выбор статьи для просмотра
         self.ui.articleView.activated.connect(self.open_webpage)
@@ -162,6 +162,23 @@ class Pocket(MainWindow):
 
         # удален тег из обозревателя тегов
         self.ui.tagsView.model().rowsRemoved.connect(self.tagCBox.completeModel)
+
+    @pyqtSlot(QAction)
+    def sortMenuTriggered(self, action):
+        """Обработка меню сортировки"""
+        if action is self.ui.actionSortTitleAsc:
+            query = SqlQuery.TitleAsc
+            self.sortOrder = self.TitleAsc
+        elif action is self.ui.actionSortTitleDesc:
+            query = SqlQuery.TitleDesc
+            self.sortOrder = self.TitleDesc
+        elif action is self.ui.actionSortDateAsc:
+            query = SqlQuery.TimeAsc
+            self.sortOrder = self.TimeAsc
+        else:
+            query = SqlQuery.TimeDesc
+            self.sortOrder = self.TimeDesc
+        self.articleTitleModel.changeSqlQuery(query)
 
     def testConnection(self):
         print('signal connected main class')

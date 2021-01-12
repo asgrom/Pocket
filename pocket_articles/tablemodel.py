@@ -12,16 +12,15 @@ logger = applogger.get_logger(__name__)
 
 class TableModel(QAbstractTableModel):
     query = """select time_saved, title, id from webpages order by lower({}) {} limit ? offset ?"""
-    defaultQuery = SqlQuery.TimeDesc
 
-    def __init__(self, cursor: sqlite3.Connection, number_rows=100, parent: QWidget = None):
+    def __init__(self, con: sqlite3.Connection, number_rows=100, parent: QWidget = None):
         """
         Args:
-            cursor (sqlite3.Cursor): Соединение с базой данных.
+            con (sqlite3.Cursor): Соединение с базой данных.
             number_rows (str): Количество строк, получаемых из базы за один запрос, (default 100)
         """
         super(TableModel, self).__init__(parent)
-        self.con = cursor
+        self.con = con
         self.number_rows = number_rows  # количество строк для считывания из базы
         self.sortColumn = 'time_saved'
         self.order = 'desc'
