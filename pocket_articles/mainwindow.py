@@ -28,21 +28,17 @@ class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
-        # временный HTML файл
-        self._tmphtmlfile = None
-        # текущая открытая статья ID
-        # tuple(строка, id в базе)
-        self._currentOpenedPageID = None
-        self.config_parser()
-        # создание соединения с базой данных
-        self.con = connect(self.database)
-
         settings = QWebEngineSettings.defaultSettings()
         settings.setAttribute(QWebEngineSettings.AllowRunningInsecureContent, True)
         settings.setAttribute(QWebEngineSettings.PluginsEnabled, True)
 
         self.ui = Ui_MainUI()
         self.ui.setupUi(self)
+
+        self.config_parser()
+        # создание соединения с базой данных
+        self.con = connect(self.database)
+
         self.initUI()
 
     def config_parser(self):

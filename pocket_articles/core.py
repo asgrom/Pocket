@@ -23,6 +23,7 @@ import sqlite3 as sql
 import sys
 import tempfile
 import traceback
+from dataclasses import dataclass
 from datetime import datetime as dt
 
 from PyQt5.QtCore import *
@@ -55,10 +56,23 @@ def log_uncaught_exceptions(ex_cls, ex, tb):
 sys.excepthook = log_uncaught_exceptions
 
 
+@dataclass(eq=False)
+class SortOrder:
+    """Тип сортировки."""
+    TitleAsc: int = 0
+    TitleDesc: int = 1
+    TimeAsc: int = 2
+    TimeDesc: int = 3
+
+
 class Pocket(MainWindow):
+    """Класс содержит основные методы графического интерфейса."""
 
     def __init__(self, parent=None):
         super(Pocket, self).__init__(parent)
+        self._currentOpenedPageID = None
+        self._tmphtmlfile = None
+        self.sortOrder = SortOrder.TimeDesc
         self.connect_slots()
 
     def connect_slots(self):
@@ -343,7 +357,7 @@ class Pocket(MainWindow):
             id_tag=(select id from tags where tag = ?);
             """
         try:
-            self.con.execute(sql_request, [self._currentOpenedPageID[1], tag])
+            self.con.execute(sql_request, [self._currentOpenedPageID, tag])
             self.con.commit()
             self.tagChanged.emit()
         except sql.Error:
@@ -422,7 +436,7 @@ class Pocket(MainWindow):
 
     @pyqtSlot(QModelIndex)
     def tag_selected(self, index: QModelIndex):
-        """Открываем статьи с выбранным тегом в дереве дегов."""
+        """Открываем статьи с выбранным тегом в дереве тегов."""
         if not index.isValid():
             return
         tagID = index.data(ID)
@@ -472,7 +486,7 @@ class Pocket(MainWindow):
         cur = self.con.cursor()
         cur.execute('begin transaction;')
         try:
-            cur.execute(insert_article_tag, [self._currentOpenedPageID[1], self.tagCBox.itemData(index, Qt.UserRole)])
+            cur.execute(insert_article_tag, [self._currentOpenedPageID, self.tagCBox.itemData(index, ID)])
         except sql.DatabaseError:
             self.con.rollback()
             logger.warning('Ошибка установки тега {}\n{}'.format(
@@ -643,7 +657,7 @@ class Pocket(MainWindow):
         self.ui.pageTitleLabel.setText(index.data())
         self.ui.urlLabel.setText(f'<a href="{url}">{url}</a>')
         self.tagCBox.setEnabled(True)
-        self._currentOpenedPageID = (index.row(), index.data(ID))
+        self._currentOpenedPageID = index.data(ID)
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:

@@ -5,12 +5,14 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QApplication, QWidget
 
 from . import applogger
+from .sqlquery import SqlQuery
 
 logger = applogger.get_logger(__name__)
 
 
 class TableModel(QAbstractTableModel):
     query = """select time_saved, title, id from webpages order by lower({}) {} limit ? offset ?"""
+    defaultQuery = SqlQuery.TimeDesc
 
     def __init__(self, cursor: sqlite3.Connection, number_rows=100, parent: QWidget = None):
         """
