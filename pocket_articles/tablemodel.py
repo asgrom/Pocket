@@ -5,7 +5,6 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QApplication, QWidget
 
 from . import applogger
-from .sqlquery import SqlQuery
 
 logger = applogger.get_logger(__name__)
 
