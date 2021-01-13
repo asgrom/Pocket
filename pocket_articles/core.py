@@ -134,7 +134,7 @@ class Pocket(MainWindow):
         self.ui.tagsView.selectionModel().currentChanged.connect(self.tag_selected)
 
         # поиск по базе
-        self.ui.dbSearchLineEdit.returnPressed.connect(self.db_search)
+        self.ui.dbSearchLineEdit.returnPressed.connect(self.search_on_database)
         self.ui.dbSearchLineEdit.returnPressed.connect(self.ui.filterArticleLineEdit.clear)
         self.ui.dbSearchLineEdit.returnPressed.connect(self.ui.tagFilterLineEdit.clear)
 
@@ -432,12 +432,13 @@ class Pocket(MainWindow):
             QApplication.restoreOverrideCursor()
 
     @pyqtSlot()
-    def db_search(self):
+    def search_on_database(self):
         txt = self.ui.dbSearchLineEdit.text()
         # устанавливаем текущий курсор на первый индекс тегов.
-        self.ui.tagsView.setCurrentIndex(
-            self.ui.tagsView.model().index(0, 0)
-        )
+        # self.ui.tagsView.setCurrentIndex(
+        #     self.ui.tagsView.model().index(0, 0)
+        # )
+        self.ui.tagsView.setCurrentIndex(QModelIndex())
         QApplication.setOverrideCursor(Qt.WaitCursor)
         if not txt:
             self.articleTitleModel.changeSqlQuery()
@@ -456,6 +457,8 @@ class Pocket(MainWindow):
         """Открываем статьи с выбранным тегом в дереве тегов."""
         if not index.isValid():
             return
+        self.ui.filterArticleLineEdit.clear()
+        self.ui.dbSearchLineEdit.clear()
         tagID = index.data(ID)
         if tagID == 'all_articles':
             self.articleTitleModel.changeSqlQuery()
@@ -479,9 +482,10 @@ class Pocket(MainWindow):
     def set_filter_article_title(self):
         """Устанавливает фильтр к статьям"""
         # устанавливаем текущим курсором первый индекс тегов.
-        self.ui.tagsView.setCurrentIndex(
-            self.ui.tagsView.model().index(0, 0)
-        )
+        # self.ui.tagsView.setCurrentIndex(
+        #     self.ui.tagsView.model().index(0, 0)
+        # )
+        self.ui.tagsView.setCurrentIndex(QModelIndex())
         if not self.ui.filterArticleLineEdit.text():
             self.articleTitleModel.changeSqlQuery()
             return
