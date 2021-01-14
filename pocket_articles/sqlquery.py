@@ -1,100 +1,82 @@
 from dataclasses import dataclass
 
+from jinja2 import Template
+
 
 @dataclass(eq=False)
 class SqlQuery:
-    """Содержит запросы к базе данных."""
-    AllHtml: str = "select * from all_html"
-    TitleAsc: str = "select * from html_by_title_asc limit ? offset ?;"
-    TitleDesc: str = "select * from html_by_title_desc limit ? offset ?;"
-    TimeAsc: str = "select * from html_by_time_asc limit ? offset ?;"
-    TimeDesc: str = "select * from html_by_time_desc limit ? offset?;"
-    PageData: str = "select * from page_data where id=?;"
-    NoTagged: str = "select * from notagged_html"
-    NoTaggedTitleAsc: str = "select * from notagged_html_title_asc limit ? offset ?;"
-    NoTaggedTitleDesc: str = "select * from notagged_html_title_desc limit ? offset ?;"
-    NoTaggedTimeAsc: str = "select * from notagged_html_time_asc limit ? offset ?;"
-    NoTaggedTimeDesc: str = "select * from notagged_html_time_desc limit ? offset?;"
-    ByTagTitleAsc: str = "select * from html_by_tag_title_asc where id_tag={0} limit ? offset ?;"
-    ByTagTitleDesc: str = "select * from html_by_tag_title_desc where id_tag={0} limit ? offset ?;"
-    ByTagTimeAsc: str = "select * from html_by_tag_time_asc where id_tag={0} limit ? offset ?;"
-    ByTagTimeDesc: str = "select * from html_by_tag_time_desc where id_tag={0} limit ? offset ?;"
-    ByTag: str = "select * from html_by_tag"
+    """Содержит шаблоны запросов к базе данных.
 
-    SortTitleAsc = 0
-    SortTitleDesc = 1
-    SortTimeAsc = 2
-    SortTimeDesc = 3
 
-    AllArticles = 'all_articles'
-    NoTags = 'notags'
+    all_html: все статьи в базе;
+
+    not_tagged_html: статьи без тегов;
+
+    html_by_tag: статьи по заданному тегу.
+    """
+    all_html: str = """
+        select * from all_html
+        order by {{ column }} {{ order }}
+        limit ? offset ?;"""
+
+    article_data: str = "select * from page_data where id={{ pageId }};"
+
+    not_tagged_html: str = """
+        select * from not_tagged_html
+        order by {{ column }} {{ order }}
+        limit ? offset ?;"""
+
+    html_by_tag: str = """
+        select time_saved, title, id
+        from html_by_tag
+        where id_tag = {{ tag_id }}
+        {% raw %}order by {{ column }} {{ order }}{% endraw %}
+        limit ? offset ?;"""
+
+    # Колонки для сортировки
+    SortTitle = 'lower(title)'  # сортировка по 'title'
+    SortDate = 'time_saved'  # сортировка по 'time_saved'
+
+    # Порядок сортировки
+    Asc = 'asc'  # сортировка по-возрастанию
+    Desc = 'desc'  # сортировка по-убыванию
 
     @staticmethod
-    def get_sql_query(query: str, order: int) -> str:
+    def get_sql_query(template: str, column: str, order: str) -> str:
         """Получить запрос к базе
 
         Получаем запрос к базе в зависимости от выбранной сортировки (order)
         и от аргумента query
 
         Args:
-            query (str): что нужно получить в базе - все статьи, статьи по
-             тегу или статьи без тегов
+            template (str): что нужно получить в базе - все статьи, статьи по
+                тегу или статьи без тегов
+            column (str): колонка для сортировки
             order (int): порядок сортировки результатов выборки в базе
         """
-        if query == SqlQuery.AllArticles:
-            if order == SqlQuery.SortTitleAsc:
-                return SqlQuery.TitleAsc
-            elif order == SqlQuery.SortTitleDesc:
-                return SqlQuery.TitleDesc
-            elif order == SqlQuery.SortTimeAsc:
-                return SqlQuery.TimeAsc
-            else:
-                return SqlQuery.TimeDesc
-        elif query == SqlQuery.NoTags:
-            if order == SqlQuery.SortTitleAsc:
-                return SqlQuery.NoTaggedTitleAsc
-            elif order == SqlQuery.SortTitleDesc:
-                return SqlQuery.NoTaggedTitleDesc
-            elif order == SqlQuery.SortTimeAsc:
-                return SqlQuery.NoTaggedTimeAsc
-            else:
-                return SqlQuery.NoTaggedTimeDesc
-        else:
-            if order == SqlQuery.SortTitleAsc:
-                return SqlQuery.ByTagTitleAsc.format(query)
-            elif order == SqlQuery.SortTitleDesc:
-                return SqlQuery.ByTagTitleDesc.format(query)
-            elif order == SqlQuery.SortTimeAsc:
-                return SqlQuery.ByTagTimeAsc.format(query)
-            else:
-                return SqlQuery.ByTagTimeDesc.format(query)
+        tmpl = Template(template, trim_blocks=True, lstrip_blocks=True)
+        return tmpl.render(column=column, order=order)
 
-
-# Query = namedtuple('Query', [
-#     'TitleAsc', 'TitleDesc',
-#     'TimeAsc', 'TimeDesc',
-#     'PageData',
-#     'NoTaggedTitleAsc', 'NoTaggedTitleDesc',
-#     'NoTaggedTimeAsc', 'NoTaggedTimeDesc',
-#     'ByTagTitleAsc', 'ByTagTitleDesc',
-#     'ByTagTimeAsc', 'ByTagTimeDesc'])
-#
-# SqlQuery = Query(
-#     TitleAsc="select * from html_by_title_asc limit ? offset ?;",
-#     TitleDesc="select * from html_by_title_desc limit ? offset ?;",
-#     TimeAsc="select * from html_by_time_asc limit ? offset ?;",
-#     TimeDesc="select * from html_by_time_desc limit ? offset?;",
-#     PageData="select * from page_data where id=?;",
-#     NoTaggedTitleAsc="select * from notagged_html_title_asc limit ? offset ?;",
-#     NoTaggedTitleDesc="select * from notagged_html_title_desc limit ? offset ?;",
-#     NoTaggedTimeAsc="select * from notagged_html_time_asc limit ? offset ?;",
-#     NoTaggedTimeDesc="select * from notagged_html_time_desc limit ? offset?;",
-#     ByTagTitleAsc="select * from html_by_tag_title_asc where id_tag=? limit ? offset ?;",
-#     ByTagTitleDesc="select * from html_by_tag_title_desc where id_tag=? limit ? offset ?;",
-#     ByTagTimeAsc="select * from html_by_tag_time_asc where id_tag=? limit ? offset ?;",
-#     ByTagTimeDesc="select * from html_by_tag_time_desc where id_tag? limit ? offset ?;"
-# )
+    @staticmethod
+    def get_template_query_by_tag(tagId):
+        """Создать шаблон запроса статей по данному тегу"""
+        tpl = Template(SqlQuery.html_by_tag)
+        return tpl.render(tag_id=tagId)
 
 
 if __name__ == '__main__':
-    print(SqlQuery().get_sql_query('all_articles', 0))
+    import sqlite3
+    from pprint import pprint
+
+    print = pprint
+
+    con = sqlite3.connect('/home/alexandr/tmp/pocket/test.db')
+    con.enable_load_extension(True)
+    con.load_extension('libSqliteIcu')
+    tpl = SqlQuery.get_template_query_by_tag(34)
+    query = SqlQuery.get_sql_query(tpl, SqlQuery.SortTitle, SqlQuery.Desc)
+    # data = con.execute(query, [100, 0]).fetchall()
+    # print(data)
+    print(tpl)
+    print(query)
+    con.close()

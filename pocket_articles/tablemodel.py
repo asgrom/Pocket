@@ -10,9 +10,9 @@ logger = applogger.get_logger(__name__)
 
 
 class TableModel(QAbstractTableModel):
-    query = """select time_saved, title, id from webpages order by lower({}) {} limit ? offset ?"""
 
-    def __init__(self, con: sqlite3.Connection, number_rows=100, parent: QWidget = None):
+    def __init__(self, con: sqlite3.Connection, query: str,
+                 number_rows=100, parent: QWidget = None):
         """
         Args:
             con (sqlite3.Cursor): Соединение с базой данных.
@@ -21,8 +21,7 @@ class TableModel(QAbstractTableModel):
         super(TableModel, self).__init__(parent)
         self.con = con
         self.number_rows = number_rows  # количество строк для считывания из базы
-        self.sortColumn = 'time_saved'
-        self.order = 'desc'
+        self.query = query
         self.dbData = []  # данные из базы
         self.chunkData = []  # порция данных из базы
         self.horizontalHeaderLabels = ['Дата', 'Название статьи']
@@ -51,7 +50,7 @@ class TableModel(QAbstractTableModel):
         self.resetModel()
 
     @pyqtSlot()
-    def changeSqlQuery(self, query=None):
+    def changeSqlQuery(self, query):
         """Изменение sql-запроса
 
         Если запрос не задан, поизойдет сброс на дефолтный.
@@ -60,24 +59,9 @@ class TableModel(QAbstractTableModel):
             query (str): Запрос к базе данных.
         """
         self.beginResetModel()
-        self.query = query if query else TableModel.query
+        self.query = query
         self._offset = 0
         self.dbData.clear()
-        self.endResetModel()
-
-    @pyqtSlot(int, int)
-    def changeSortOrder(self, column: str, order: str):
-        """Изменение сортировки.
-
-        Args:
-            order (str): Asc or Desc sorting.
-            column (str): Column to be sorted.
-        """
-        self.beginResetModel()
-        self.sortColumn = column
-        self.order = order
-        self.dbData.clear()
-        self._offset = 0
         self.endResetModel()
 
     def data(self, index: QModelIndex, role: int = ...) -> typing.Any:
@@ -117,10 +101,10 @@ class TableModel(QAbstractTableModel):
             parent (QModelIndex):
         """
         try:
-            self.chunkData = self.con.execute(self.query.format(self.sortColumn, self.order),
-                                              [self.number_rows, self._offset]).fetchall()
+            self.chunkData = self.con.execute(
+                self.query, [self.number_rows, self._offset]).fetchall()
         except sqlite3.ProgrammingError:
-            logger.exception('Exception occurred in canFetchMore')
+            # logger.exception('Exception occurred in canFetchMore')
             return False
         except sqlite3.Error:
             logger.exception('Exception sqlite query in canFetchMore')

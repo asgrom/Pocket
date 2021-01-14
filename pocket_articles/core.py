@@ -2,7 +2,6 @@
 #   ИСПОЛЬЗОВАТЬ SELECTIONMODEL В ОБОЗРЕВАТЕЛЕ ТЕГОВ? ТОГДА МОЖНО БУДЕТ УБРАТЬ ЛИШНИЕ ПРОВЕРКИ.
 #   ДОБАВИТЬ ВОЗМОЖНОСТЬ РЕДАКТИРОВАНИЯ НАЗВАНИЯ СТАТЕЙ.
 #   сделать что-то с выбором тегов в браузере тегов(чтобы выбирались только актуальные теги)
-#   переделать resetCurrentState
 #   приделать тулбар
 #
 #   1.1 ДОбАВИТЬ ВОЗМОЖНОСТЬ ОТКРЫТИЯ HTML В ОТДЕЛЬНОМ ОКНЕ.
@@ -58,16 +57,10 @@ sys.excepthook = log_uncaught_exceptions
 
 class Pocket(MainWindow):
     """Класс содержит основные методы графического интерфейса."""
-    TitleAsc = 0
-    TitleDesc = 1
-    TimeAsc = 2
-    TimeDesc = 3
-
     def __init__(self, parent=None):
         super(Pocket, self).__init__(parent)
         self._currentOpenedPageID = None
         self._tmphtmlfile = None
-        self.sortOrder = self.TimeDesc
         self.connect_slots()
 
     def connect_slots(self):
@@ -166,18 +159,15 @@ class Pocket(MainWindow):
     @pyqtSlot(QAction)
     def sortMenuTriggered(self, action):
         """Обработка меню сортировки"""
-        if action is self.ui.actionSortTitleAsc:
-            query = SqlQuery.TitleAsc
-            self.sortOrder = self.TitleAsc
-        elif action is self.ui.actionSortTitleDesc:
-            query = SqlQuery.TitleDesc
-            self.sortOrder = self.TitleDesc
-        elif action is self.ui.actionSortDateAsc:
-            query = SqlQuery.TimeAsc
-            self.sortOrder = self.TimeAsc
+        if action is self.ui.actionSortTitleAsc or action is self.ui.actionSortTitleDesc:
+            self.sortColumn = SqlQuery.SortTitle
         else:
-            query = SqlQuery.TimeDesc
-            self.sortOrder = self.TimeDesc
+            self.sortColumn = SqlQuery.SortDate
+        if action is self.ui.actionSortDateAsc or action is self.ui.actionSortTitleAsc:
+            self.sortOrder = SqlQuery.Asc
+        else:
+            self.sortOrder = SqlQuery.Desc
+        query = SqlQuery.get_sql_query(self.currentSqlQuery, self.sortColumn, self.sortOrder)
         self.articleTitleModel.changeSqlQuery(query)
 
     def testConnection(self):
@@ -434,10 +424,6 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def search_on_database(self):
         txt = self.ui.dbSearchLineEdit.text()
-        # устанавливаем текущий курсор на первый индекс тегов.
-        # self.ui.tagsView.setCurrentIndex(
-        #     self.ui.tagsView.model().index(0, 0)
-        # )
         self.ui.tagsView.setCurrentIndex(QModelIndex())
         QApplication.setOverrideCursor(Qt.WaitCursor)
         if not txt:
@@ -461,30 +447,18 @@ class Pocket(MainWindow):
         self.ui.dbSearchLineEdit.clear()
         tagID = index.data(ID)
         if tagID == 'all_articles':
-            self.articleTitleModel.changeSqlQuery()
-            return
-        if tagID == 'notags':
-            query = ("""
-                select time_saved, title, id
-                from webpages
-                where id not in
-                (select id_page from webpagetags group by id_page)
-                order by lower({}) {} limit ? offset ?;""")
+            self.currentSqlQuery = SqlQuery.all_html
+        elif tagID == 'notags':
+            self.currentSqlQuery = SqlQuery.not_tagged_html
         else:
-            query = (
-                """select time_saved, title, webpages.id
-                from webpages inner join webpagetags w on webpages.id = w.id_page
-                where w.id_tag = {0}
-                order by lower({{}}) {{}} limit ? offset ?;""".format(tagID))
+            tpl = SqlQuery.get_template_query_by_tag(tagID)
+            self.currentSqlQuery = tpl
+        query = SqlQuery.get_sql_query(self.currentSqlQuery, self.sortColumn, self.sortOrder)
         self.articleTitleModel.changeSqlQuery(query)
 
     @pyqtSlot()
     def set_filter_article_title(self):
         """Устанавливает фильтр к статьям"""
-        # устанавливаем текущим курсором первый индекс тегов.
-        # self.ui.tagsView.setCurrentIndex(
-        #     self.ui.tagsView.model().index(0, 0)
-        # )
         self.ui.tagsView.setCurrentIndex(QModelIndex())
         if not self.ui.filterArticleLineEdit.text():
             self.articleTitleModel.changeSqlQuery()
@@ -682,8 +656,7 @@ class Pocket(MainWindow):
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        self.articleTitleModel.deleteLater()
-        self.articleTagModel.deleteLater()
+        # self.articleTitleModel.deleteLater()
         if self.con:
             self.con.close()
         try:

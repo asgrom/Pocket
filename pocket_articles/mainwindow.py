@@ -15,6 +15,7 @@ from .tablemodel import TableModel
 from .tagcombobox import TagsComboBox
 from .tagmodel import TagModel
 from .treeviewproxymodel import TreeViewProxyModel
+from .sqlquery import SqlQuery
 
 
 class MainWindow(QMainWindow):
@@ -27,6 +28,10 @@ class MainWindow(QMainWindow):
 
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
+
+        self.sortOrder = SqlQuery.Desc
+        self.currentSqlQuery = SqlQuery.all_html
+        self.sortColumn = SqlQuery.SortDate
 
         settings = QWebEngineSettings.defaultSettings()
         settings.setAttribute(QWebEngineSettings.AllowRunningInsecureContent, True)
@@ -70,7 +75,8 @@ class MainWindow(QMainWindow):
         ################################################################################
         # отображение списка статей
         ################################################################################
-        self.articleTitleModel = TableModel(self.con)
+        query = SqlQuery.get_sql_query(self.currentSqlQuery, self.sortColumn, self.sortOrder)
+        self.articleTitleModel = TableModel(self.con, query)
         self.articleTitleModel.setObjectName('ArticleList')
         self.ui.articleView.setSortingEnabled(False)
         self.ui.articleView.verticalHeader().setVisible(True)

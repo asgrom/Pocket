@@ -93,8 +93,7 @@ def create_tables(connector: sql.Connection):
     Если в базе уже существуют таблицы, то они удаляются и создаются снова."""
     try:
         with connector:
-            connector.executescript(
-                """
+            connector.executescript("""
                 create table if not exists 'webpages' (
                 id integer primary key autoincrement,
                 'title' text,
@@ -102,10 +101,12 @@ def create_tables(connector: sql.Connection):
                 'time_saved' text,
                 'hash' text not null unique
                 );
+                
                 create table if not exists 'tags' (
                 'id' integer primary key autoincrement,
                 'tag' text unique not null
                 );
+                
                 create table if not exists 'webpagetags'(
                 'id' integer primary key autoincrement,
                 'id_page' integer,
@@ -116,14 +117,40 @@ def create_tables(connector: sql.Connection):
                 constraint fk_id_tag foreign key (id_tag) references tags (id)
                     on update cascade on delete cascade
                 );
+                
                 create table if not exists "html_contents"(
                     "id_page"	INTEGER NOT NULL UNIQUE,
                     "html"	TEXT NOT NULL,
                     constraint fk_page_id FOREIGN KEY("id_page") REFERENCES "webpages"("id")
                     on update cascade on delete cascade
                     );
+                    
                 create virtual table if not exists 'search_table' using FTS5('id_page', 'title', 'content');
-                """)
+                
+                CREATE VIEW IF NOT EXISTS html_by_tag AS
+                SELECT time_saved,
+                       title,
+                       p.id,
+                       id_tag
+                FROM webpages p
+                         JOIN webpagetags w ON p.id = w.id_page;
+                         
+                CREATE VIEW IF NOT EXISTS all_html AS
+                SELECT time_saved,
+                       title,
+                       id
+                FROM webpages;
+                
+                CREATE VIEW IF NOT EXISTS not_tagged_html AS
+                SELECT time_saved,
+                       title,
+                       id
+                FROM webpages
+                WHERE id NOT IN (
+                    SELECT id_page
+                    FROM webpagetags
+                    GROUP BY id_page
+                );""")
     except sql.Error:
         logger.exception('Ошибка создания таблиц в базе данных')
         close_connection(connector)
