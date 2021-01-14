@@ -617,27 +617,21 @@ class Pocket(MainWindow):
         self.ui.webView.findText('')  # сбрасываем поиск текста на странице
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
-            url = self.con.execute("""select url from webpages where id=?""",
-                                   [index.data(ID)]).fetchone()[0]
-            html = self.con.execute("""select html from html_contents where id_page=?""",
-                                    [index.data(ID)]).fetchone()[0]
-            tags = self.con.execute("""select tag from tags where id in
-                                    (select id_tag from webpagetags where id_page = ?);""",
-                                    [index.data(ID)]).fetchall()
-        except Exception:  # разделить исключения
+            query = SqlQuery.get_query_page_data(index.data(ID))
+            url, html, tags = self.con.execute(query).fetchone()
+        except Exception:
             logger.exception('Exception in open_webpage')
             QMessageBox.critical(self, 'Ошибка открытия статьи', 'Ошибка открытия страницы')
             QApplication.restoreOverrideCursor()
             return
         # удаляем теги из горизонтального лейаута
-        # for i in range(self.articleTagsHBox.count() - 1, -1, -1):
         for i in list(range(self.articleTagsHBox.count()))[::-1]:
             item = self.articleTagsHBox.itemAt(i)
             if isinstance(item.widget(), ArticleTag):
                 self.articleTagsHBox.takeAt(i).widget().deleteLater()
-        for tag in tags:
+        for tag in tags.split(','):
             self.articleTagsHBox.insertWidget(
-                self.articleTagsHBox.count() - 1, ArticleTag(tag[0]))
+                self.articleTagsHBox.count() - 1, ArticleTag(tag))
 
         try:
             os.unlink(self._tmphtmlfile)

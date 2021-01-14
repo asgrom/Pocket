@@ -53,8 +53,6 @@ class TableModel(QAbstractTableModel):
     def changeSqlQuery(self, query):
         """Изменение sql-запроса
 
-        Если запрос не задан, поизойдет сброс на дефолтный.
-
         Args:
             query (str): Запрос к базе данных.
         """

@@ -19,7 +19,10 @@ class SqlQuery:
         order by {{ column }} {{ order }}
         limit ? offset ?;"""
 
-    article_data: str = "select * from page_data where id={{ pageId }};"
+    article_data: str = """
+        select url, html, tags
+        from page_data
+        where id={{ page_id }};"""
 
     not_tagged_html: str = """
         select * from not_tagged_html
@@ -63,20 +66,23 @@ class SqlQuery:
         tpl = Template(SqlQuery.html_by_tag)
         return tpl.render(tag_id=tagId)
 
+    @staticmethod
+    def get_query_page_data(pageId):
+        tpl = Template(SqlQuery.article_data, trim_blocks=True, lstrip_blocks=True)
+        return tpl.render(page_id=pageId)
+
 
 if __name__ == '__main__':
     import sqlite3
     from pprint import pprint
 
-    print = pprint
+    # print = pprint
 
     con = sqlite3.connect('/home/alexandr/tmp/pocket/test.db')
     con.enable_load_extension(True)
     con.load_extension('libSqliteIcu')
-    tpl = SqlQuery.get_template_query_by_tag(34)
-    query = SqlQuery.get_sql_query(tpl, SqlQuery.SortTitle, SqlQuery.Desc)
-    # data = con.execute(query, [100, 0]).fetchall()
-    # print(data)
-    print(tpl)
-    print(query)
+    t = SqlQuery.get_query_page_data(147)
+    url, html, tags = con.execute(t).fetchone()
+    print(url, tags)
+    # print(t)
     con.close()

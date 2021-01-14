@@ -150,7 +150,24 @@ def create_tables(connector: sql.Connection):
                     SELECT id_page
                     FROM webpagetags
                     GROUP BY id_page
-                );""")
+                );
+                
+                CREATE VIEW IF NOT EXISTS page_data AS
+                SELECT p.url,
+                       p.html,
+                       group_concat(t.tag) AS "tags",
+                       p.id
+                FROM (
+                         webpages
+                             JOIN html_contents ON webpages.id = html_contents.id_page
+                         ) AS p
+                         LEFT JOIN (
+                    SELECT tag,
+                           id_page
+                    FROM tags
+                             JOIN webpagetags ON tags.id = webpagetags.id_tag
+                ) AS t ON t.id_page = p.id
+                GROUP BY p.id;""")
     except sql.Error:
         logger.exception('Ошибка создания таблиц в базе данных')
         close_connection(connector)
