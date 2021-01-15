@@ -9,10 +9,9 @@ COUNT = Qt.UserRole + 1
 
 
 class TagModel(QStandardItemModel):
-    notags_req = """
-        select count(id) from webpages
-        where id not in
-        (select id_page from webpagetags);"""
+    query_notags_count = """select count(id) from not_tagged_html;"""
+    query_all_articles_count = "select count(id) from webpages;"
+    query_count_tagged_html = "select * from count_tagged_html;"
 
     def __init__(self, con: sqlite3.Connection):
         super(TagModel, self).__init__(parent=None)
@@ -33,10 +32,7 @@ class TagModel(QStandardItemModel):
 
     def create_all_articles_item(self):
         """Создает QStandardItem все статьи."""
-        article_count = self.con.execute(
-            """
-            select count(id) from webpages;
-            """).fetchone()[0]
+        article_count = self.con.execute(self.query_all_articles_count).fetchone()[0]
         all_articles = QStandardItem('Все статьи')
         all_articles.setData('all_articles', ID)
         all_articles.setData(article_count, COUNT)
@@ -53,8 +49,11 @@ class TagModel(QStandardItemModel):
             self.con.commit()
         else:
             favorites_id = favorites_id[0]
+        count = self.con.execute("""
+            select count(id_page) from webpagetags where id_tag=?""",
+                                 [favorites_id]).fetchone()[0]
         favorites.setData(favorites_id, ID)
-        favorites.setData(0, COUNT)
+        favorites.setData(count, COUNT)
         favorites.setIcon(QIcon(QPixmap(':/images/rating.png')))
         favorites.setEditable(False)
         return favorites
@@ -68,7 +67,7 @@ class TagModel(QStandardItemModel):
 
     def create_notags_item(self):
         """Создает QStandardItem без тегов."""
-        notags_count = self.con.execute(self.notags_req).fetchone()[0]
+        notags_count = self.con.execute(self.query_notags_count).fetchone()[0]
         notags = QStandardItem('Без тегов')
         notags.setData('notags', ID)
         notags.setData(notags_count, COUNT)
@@ -82,11 +81,11 @@ class TagModel(QStandardItemModel):
         tags.setFlags(Qt.NoItemFlags)
         tags.setIcon(QIcon(QPixmap(':/images/tags.png')))
         tags.setData('tags', ID)
-        for tag, id_ in self.con.execute('select tag, id from tags;'):
+        for tag, count, id_ in self.con.execute(self.query_count_tagged_html):
             if id_ == favorites_id:
                 continue
             item = QStandardItem('{0}'.format(tag))
-            item.setData(0, COUNT)
+            item.setData(count, COUNT)
             item.setData(id_, ID)
             tags.appendRow(item)
         return tags
@@ -108,23 +107,14 @@ class TagModel(QStandardItemModel):
         self.appendRow(favorites)
         self.appendRow(QStandardItem(line))
         self.appendRow(tags)
-        for count, _id in self.con.execute("""
-                select count(tags.id), tags.id
-                from tags join webpageTags on tags.id = webpageTags.id_tag
-                group by tags.id;"""):
-            tag_idx = self.match(self.index(0, 0), ID, _id, 1,
-                                 Qt.MatchExactly | Qt.MatchRecursive)[0]
-            if tag_idx.data(COUNT) != count:
-                self.setData(tag_idx, count, COUNT)
 
     @pyqtSlot()
     def updateModel(self):
-        """Обновление данных в модели отображения тегов статей"""
+        """Обновление данных в модели"""
         #########################################################
         # item "все статьи"
         #########################################################
-        all_articles_count = self.con.execute(
-            'select count(id) from webpages;').fetchone()[0]
+        all_articles_count = self.con.execute(self.query_all_articles_count).fetchone()[0]
 
         all_articles_item_idx = self.match(
             self.index(0, 0), ID,
@@ -137,7 +127,7 @@ class TagModel(QStandardItemModel):
         #########################################################
         # item "без тегов"
         #########################################################
-        notags_count = self.con.execute(self.notags_req).fetchone()[0]
+        notags_count = self.con.execute(self.query_notags_count).fetchone()[0]
 
         notags_idx = self.match(
             self.index(0, 0), ID,
@@ -152,14 +142,10 @@ class TagModel(QStandardItemModel):
             self.index(0, 0), ID,
             'tags', 1, Qt.MatchExactly)[0]
 
-        for tag, id_ in self.con.execute('select tag, id from tags'):
+        for tag, count, id_ in self.con.execute(self.query_count_tagged_html):
             tag_item_idx = self.match(
                 self.index(0, 0), ID,
                 id_, 1, Qt.MatchExactly | Qt.MatchRecursive)
-
-            count = self.con.execute(
-                """select count(id_page) from webpagetags where id_tag=?;""",
-                [id_]).fetchone()[0]
 
             if not tag_item_idx:
                 item = QStandardItem(tag)

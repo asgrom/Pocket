@@ -1,5 +1,6 @@
 # todo:
 #   ДОБАВИТЬ ВОЗМОЖНОСТЬ РЕДАКТИРОВАНИЯ НАЗВАНИЯ СТАТЕЙ.
+#   СОЗДАТЬ ИНДЕКСЫ В БАЗЕ?
 #   приделать тулбар
 #   1.1 ДОбАВИТЬ ВОЗМОЖНОСТЬ ОТКРЫТИЯ HTML В ОТДЕЛЬНОМ ОКНЕ.
 #   2. СДЕЛАТЬ ВОЗМОЖНОСТЬ ПЕРЕИМЕНОВАНИЯ ТЕГОВ В ДЕРЕВЕ ТЕГОВ.
@@ -72,7 +73,9 @@ class Pocket(MainWindow):
         # новое соединение с базой данных
         self.databaseChanged.connect(self.tagCBox.setDatabaseConnector)
         self.databaseChanged.connect(self.articleTagModel.setDatabaseConnector)
-        self.databaseChanged.connect(self.articleTitleModel.setDatabaseConnector)
+        self.databaseChanged.connect(
+            lambda x: self.articleTitleModel.setDatabaseConnector(x, self.currentSqlQuery)
+        )
 
         # импортированы новые html
         self.htmlImported.connect(self.articleTitleModel.resetModel)
@@ -317,8 +320,9 @@ class Pocket(MainWindow):
         except Exception:
             logger.exception('Ошибка соединения с базой')
             QMessageBox.critical(self, '', 'Ошибка соединения с базой данных')
-        else:
-            self.databaseChanged.emit(self.con)
+            return
+        self.currentSqlQuery = SqlQuery.get_sql_query(SqlQuery.all_html, self.sortColumn, self.sortOrder)
+        self.databaseChanged.emit(self.con)
 
     @pyqtSlot()
     def export_article_to_html(self):
@@ -516,7 +520,7 @@ class Pocket(MainWindow):
         if not dbase_path:
             return
         if not os.path.splitext(dbase_path)[1]:
-            dbase_path = os.path.splitext(dbase_path)[0] + '.db'
+            dbase_path = dbase_path + '.db'
         if os.path.exists(dbase_path):
             os.unlink(dbase_path)
 
@@ -532,6 +536,7 @@ class Pocket(MainWindow):
             logger.exception('Exception in create new dbase')
             QMessageBox.critical(self, 'Ошибка', 'Ошибка создания базы данных')
         else:
+            self.currentSqlQuery = SqlQuery.get_sql_query(SqlQuery.all_html, self.sortColumn, self.sortOrder)
             self.databaseChanged.emit(self.con)
         finally:
             QApplication.restoreOverrideCursor()
@@ -617,9 +622,10 @@ class Pocket(MainWindow):
             item = self.articleTagsHBox.itemAt(i)
             if isinstance(item.widget(), ArticleTag):
                 self.articleTagsHBox.takeAt(i).widget().deleteLater()
-        for tag in tags.split(','):
-            self.articleTagsHBox.insertWidget(
-                self.articleTagsHBox.count() - 1, ArticleTag(tag))
+        if tags:
+            for tag in tags.split(','):
+                self.articleTagsHBox.insertWidget(
+                    self.articleTagsHBox.count() - 1, ArticleTag(tag))
 
         try:
             os.unlink(self._tmphtmlfile)

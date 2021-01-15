@@ -93,6 +93,7 @@ def create_tables(connector: sql.Connection):
     Если в базе уже существуют таблицы, то они удаляются и создаются снова."""
     try:
         with connector:
+            connector.execute('begin transaction;')
             connector.executescript("""
                 create table if not exists 'webpages' (
                 id integer primary key autoincrement,
@@ -167,10 +168,23 @@ def create_tables(connector: sql.Connection):
                     FROM tags
                              JOIN webpagetags ON tags.id = webpagetags.id_tag
                 ) AS t ON t.id_page = p.id
-                GROUP BY p.id;""")
-    except sql.Error:
+                GROUP BY p.id;
+                
+                CREATE VIEW IF NOT EXISTS count_tagged_html AS
+                SELECT tag, count(webpagetags.id_page) AS page_count, tags.id
+                FROM tags
+                         LEFT JOIN webpagetags ON tags.id = webpagetags.id_tag
+                GROUP BY tags.id;""")
+            connector.commit()
+            try:
+                connector.execute("begin transaction;")
+                connector.execute('insert into tags (tag) values (?);', ['Избранное'])
+                connector.commit()
+            except sql.Error:
+                connector.rollback()
+    except sql.Error as e:
         logger.exception('Ошибка создания таблиц в базе данных')
-        close_connection(connector)
+        raise e
 
 
 def delete_indexes(connector: sql.Connection):

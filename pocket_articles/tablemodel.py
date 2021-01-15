@@ -15,8 +15,11 @@ class TableModel(QAbstractTableModel):
                  number_rows=100, parent: QWidget = None):
         """
         Args:
-            con (sqlite3.Cursor): Соединение с базой данных.
-            number_rows (str): Количество строк, получаемых из базы за один запрос, (default 100)
+            con (sqlite3.Connection): Соединение с базой данных.
+            query (str):
+            number_rows (str): Количество строк, получаемых из базы за один
+                запрос, (default 100)
+            parent (QWidget):
         """
         super(TableModel, self).__init__(parent)
         self.con = con
@@ -34,19 +37,20 @@ class TableModel(QAbstractTableModel):
         self.chunkData.clear()
         self.dbData.clear()
         self._offset = 0
-        self.query = TableModel.query
         self.endResetModel()
 
     @pyqtSlot(sqlite3.Cursor)
-    def setDatabaseConnector(self, con: sqlite3.Connection):
-        """Устанавливает курсор базы данных.
+    def setDatabaseConnector(self, con: sqlite3.Connection, query: str):
+        """Устанавливает соединение с базой данных.
 
-        Устанавливаем новый курсор базы при ее смене из меню пользователя.
+        Устанавливаем новое соединение с базой.
 
         Args:
             con (sqlite3.Connection):
+            query (str):
         """
         self.con = con
+        self.query = query
         self.resetModel()
 
     @pyqtSlot()
@@ -85,6 +89,12 @@ class TableModel(QAbstractTableModel):
         return
 
     def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
+        """
+        Args:
+            row (int):
+            column (int):
+            parent (QModelIndex):
+        """
         if row >= self.rowCount(parent):
             while row >= self.rowCount(parent):
                 if self.canFetchMore(parent):
