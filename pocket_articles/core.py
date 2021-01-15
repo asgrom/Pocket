@@ -423,19 +423,15 @@ class Pocket(MainWindow):
 
     @pyqtSlot()
     def search_on_database(self):
-        txt = self.ui.dbSearchLineEdit.text()
+        if not self.ui.dbSearchLineEdit.text():
+            return
         self.ui.tagsView.setCurrentIndex(QModelIndex())
         QApplication.setOverrideCursor(Qt.WaitCursor)
-        if not txt:
-            self.articleTitleModel.changeSqlQuery()
-        else:
-            query = (
-                f"""
-                select time_saved, webpages.title, id from webpages
-                join search_table on id=id_page 
-                where search_table.content match '{txt}'
-                order by rank limit ? offset ?;""")
-            self.articleTitleModel.changeSqlQuery(query)
+        query = SqlQuery.get_full_text_search_query(
+            SqlQuery.SearchContent,
+            self.ui.dbSearchLineEdit.text()
+        )
+        self.articleTitleModel.changeSqlQuery(query)
         QApplication.restoreOverrideCursor()
 
     @pyqtSlot(QModelIndex)
@@ -459,17 +455,14 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def set_filter_article_title(self):
         """Устанавливает фильтр к статьям"""
-        self.ui.tagsView.setCurrentIndex(QModelIndex())
         if not self.ui.filterArticleLineEdit.text():
-            self.articleTitleModel.changeSqlQuery()
             return
-        sql_request = (
-            """select time_saved, webpages.title, id
-            from webpages join search_table on id=id_page
-            where search_table.title match '{0}'
-            order by rank limit ? offset ?""".format(
-                self.ui.filterArticleLineEdit.text()))
-        self.articleTitleModel.changeSqlQuery(sql_request)
+        self.ui.tagsView.setCurrentIndex(QModelIndex())
+        query = SqlQuery.get_full_text_search_query(
+            SqlQuery.SearchTitle,
+            self.ui.filterArticleLineEdit.text()
+        )
+        self.articleTitleModel.changeSqlQuery(query)
 
     @pyqtSlot(int)
     def add_new_tag(self, index):

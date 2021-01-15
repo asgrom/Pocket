@@ -3,16 +3,17 @@ from dataclasses import dataclass
 from jinja2 import Template
 
 
-@dataclass(eq=False)
+# @dataclass(eq=False)
 class SqlQuery:
     """Содержит шаблоны запросов к базе данных.
-
 
     all_html: все статьи в базе;
 
     not_tagged_html: статьи без тегов;
 
-    html_by_tag: статьи по заданному тегу.
+    html_by_tag: статьи по заданному тегу;
+    filter_by_title: фильтр статей по названию;
+
     """
     all_html: str = """
         select * from all_html
@@ -36,9 +37,22 @@ class SqlQuery:
         {% raw %}order by {{ column }} {{ order }}{% endraw %}
         limit ? offset ?;"""
 
+    full_text_search = """
+        select time_saved, title, id
+        from webpages as p
+                 join (select id_page
+                       from search_table
+                       where {{ column }} match '{{ text }}'
+                       order by rank) as s on p.id = s.id_page
+        limit ? offset ?;"""
+
     # Колонки для сортировки
     SortTitle = 'lower(title)'  # сортировка по 'title'
     SortDate = 'time_saved'  # сортировка по 'time_saved'
+
+    # Колонки для полнотекстового поиска
+    SearchTitle = 'title'
+    SearchContent = 'content'
 
     # Порядок сортировки
     Asc = 'asc'  # сортировка по-возрастанию
@@ -46,43 +60,57 @@ class SqlQuery:
 
     @staticmethod
     def get_sql_query(template: str, column: str, order: str) -> str:
-        """Получить запрос к базе
+        """Сгенерировать запрос к базе
 
-        Получаем запрос к базе в зависимости от выбранной сортировки (order)
-        и от аргумента query
+        Получаем запрос к базе в зависимости от выбранной сортировки и
+        колонки для сортировки.
 
         Args:
-            template (str): что нужно получить в базе - все статьи, статьи по
-                тегу или статьи без тегов
+            template (str): шаблон запроса
             column (str): колонка для сортировки
-            order (int): порядок сортировки результатов выборки в базе
+            order (str): порядок сортировки результатов выборки в базе
         """
         tmpl = Template(template, trim_blocks=True, lstrip_blocks=True)
         return tmpl.render(column=column, order=order)
 
     @staticmethod
     def get_template_query_by_tag(tagId):
-        """Создать шаблон запроса статей по данному тегу"""
+        """Создать шаблон запроса статей по данному тегу
+
+        Args:
+            tagId: ID тега
+        """
         tpl = Template(SqlQuery.html_by_tag)
         return tpl.render(tag_id=tagId)
 
     @staticmethod
     def get_query_page_data(pageId):
+        """Создать запрос к базе данных для получения данных статьи по ее ID
+
+        Args:
+            pageId: ID статьи
+        """
         tpl = Template(SqlQuery.article_data, trim_blocks=True, lstrip_blocks=True)
         return tpl.render(page_id=pageId)
+
+    @staticmethod
+    def get_full_text_search_query(column: str, text: str):
+        """Создать запрос для full-text поиска"""
+        tpl = Template(SqlQuery.full_text_search)
+        return tpl.render(column=column, text=text)
 
 
 if __name__ == '__main__':
     import sqlite3
     from pprint import pprint
 
-    # print = pprint
+    print = pprint
 
     con = sqlite3.connect('/home/alexandr/tmp/pocket/test.db')
     con.enable_load_extension(True)
     con.load_extension('libSqliteIcu')
-    t = SqlQuery.get_query_page_data(147)
-    url, html, tags = con.execute(t).fetchone()
-    print(url, tags)
-    # print(t)
+    t = SqlQuery.get_full_text_search_query(SqlQuery.SearchContent, 'рис*')
+    data = con.execute(t, [100, 0]).fetchall()
+    print(data)
+    print(t)
     con.close()
