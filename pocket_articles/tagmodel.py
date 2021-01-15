@@ -146,22 +146,6 @@ class TagModel(QStandardItemModel):
         if notags_idx.data(COUNT) != notags_count:
             self.setData(notags_idx, notags_count, COUNT)
         #########################################################
-        # item "избранное"
-        #########################################################
-        favorites_count = self.con.execute(
-            """
-            select count(id_page) from webpagetags
-            where id_tag =
-            (select id from tags where tag="Избранное");
-            """).fetchone()[0]
-
-        favorites_idx = self.match(
-            self.index(0, 0), Qt.DisplayRole,
-            'Избранное', 1, Qt.MatchExactly)[0]
-
-        if favorites_idx.data(COUNT) != favorites_count:
-            self.setData(favorites_idx, favorites_count, COUNT)
-        #########################################################
         # item "теги"
         #########################################################
         tags_item_idx = self.match(
