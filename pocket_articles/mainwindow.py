@@ -4,7 +4,7 @@ import sqlite3
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from PyQt5.QtWebEngineWidgets import QWebEngineSettings
+from PyQt5.QtWebEngineWidgets import *
 from PyQt5.QtWidgets import *
 
 from .dbmethods import connect
@@ -36,6 +36,8 @@ class MainWindow(QMainWindow):
         settings = QWebEngineSettings.defaultSettings()
         settings.setAttribute(QWebEngineSettings.AllowRunningInsecureContent, True)
         settings.setAttribute(QWebEngineSettings.PluginsEnabled, True)
+        profile = QWebEngineProfile.defaultProfile()
+        profile.setHttpCacheType(QWebEngineProfile.NoCache)
 
         self.ui = Ui_MainUI()
         self.ui.setupUi(self)

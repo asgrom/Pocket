@@ -1,9 +1,6 @@
-from dataclasses import dataclass
-
 from jinja2 import Template
 
 
-# @dataclass(eq=False)
 class SqlQuery:
     """Содержит шаблоны запросов к базе данных.
 

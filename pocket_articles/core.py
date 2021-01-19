@@ -1,4 +1,6 @@
 # todo:
+#   ИЗМЕНИТЬ МЕТОД ПОЛУЧЕНИЯ ДАННЫх ИЗ СТРАНИЦЫ, ЧТОбЫ МОжНО бЫЛО
+#   ИМПОРТИРОВАТЬ MHTML
 #   ДОБАВИТЬ ВОЗМОЖНОСТЬ РЕДАКТИРОВАНИЯ НАЗВАНИЯ СТАТЕЙ.
 #   СОЗДАТЬ ИНДЕКСЫ В БАЗЕ?
 #   приделать тулбар
@@ -22,7 +24,7 @@ from datetime import datetime as dt
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from PyQt5.QtWebEngineWidgets import QWebEnginePage
+from PyQt5.QtWebEngineWidgets import *
 from PyQt5.QtWidgets import *
 
 from . import applogger
@@ -635,7 +637,6 @@ class Pocket(MainWindow):
         _, self._tmphtmlfile = tempfile.mkstemp(suffix='.html', text=False)
         with open(self._tmphtmlfile, 'w') as fh:
             fh.write(html)
-
         self.ui.webView.load(QUrl.fromLocalFile(self._tmphtmlfile))
         self.ui.pageTitleLabel.setText(index.data())
         self.ui.urlLabel.setText(f'<a href="{url}">{url}</a>')
@@ -652,6 +653,7 @@ class Pocket(MainWindow):
                 os.unlink(self._tmphtmlfile)
         except OSError:
             logger.exception('Exception in closeEvent unlink self._tmphtmlfile')
+        QWebEngineProfile.defaultProfile().clearHttpCache()
         self.save_status()
         event.accept()
 
