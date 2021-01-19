@@ -46,7 +46,8 @@ def log_uncaught_exceptions(ex_cls, ex, tb):
     text = 'Uncaught exception\n{}: {}:\n'.format(ex_cls.__name__, ex)
     text += ''.join(traceback.format_tb(tb))
     logger.error(text)
-    QMessageBox.critical(None, 'Ошибка выполнения', "Возникла ошибка.\nСмотри лог программы.")
+    # QMessageBox.critical(None, 'Ошибка выполнения', "Возникла ошибка.\nСмотри лог программы.")
+    QMessageBox.critical(None, 'Ошибка выполнения', f"{ex}\nСмотри лог программы.")
     qApp.exit()
 
 
@@ -318,7 +319,7 @@ class Pocket(MainWindow):
         try:
             self.con.close()
             self.con = connect(db_path)
-            self.database = db_path
+            self.dbFile = db_path
         except Exception:
             logger.exception('Ошибка соединения с базой')
             QMessageBox.critical(self, '', 'Ошибка соединения с базой данных')
@@ -530,7 +531,7 @@ class Pocket(MainWindow):
         try:
             self.con.close()
             self.con = connect(dbase_path)
-            self.database = dbase_path
+            self.dbFile = dbase_path
             self.ui.statusbar.showMessage('База данных создана')
             logger.info(f'Новая база данных создана {dbase_path}')
             QMessageBox.information(self, 'Готово', 'База данных создана')
@@ -658,7 +659,7 @@ class Pocket(MainWindow):
         event.accept()
 
     def save_status(self):
-        dbpath = os.path.abspath(self.database)
+        dbpath = os.path.abspath(self.dbFile)
         statusDict = dict(dbase=dbpath)
         with open(self.configFile, 'w') as fh:
             json.dump(statusDict, fh, ensure_ascii=False, indent=4)

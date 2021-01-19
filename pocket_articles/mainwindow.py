@@ -1,6 +1,7 @@
 import json
 import os
 import sqlite3
+import sys
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -16,6 +17,7 @@ from .tagcombobox import TagsComboBox
 from .tagmodel import TagModel
 from .treeviewproxymodel import TreeViewProxyModel
 from .sqlquery import SqlQuery
+from .dialog import Dialog
 
 
 class MainWindow(QMainWindow):
@@ -23,7 +25,8 @@ class MainWindow(QMainWindow):
     tagChanged = pyqtSignal()
     databaseChanged = pyqtSignal(sqlite3.Connection)
 
-    database = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data/articles.db')
+    # dbFile = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data/articles.db')
+    dbFile = None
     configFile = os.path.join(os.path.dirname(__file__), 'config/config.json')
 
     def __init__(self, parent=None):
@@ -43,8 +46,13 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self)
 
         self.config_parser()
-        # создание соединения с базой данных
-        self.con = connect(self.database)
+        if not MainWindow.dbFile:
+            dbFile = Dialog.getDatabaseFile(self)
+            if not dbFile:
+                raise Exception('No Database File')
+            MainWindow.dbFile = dbFile
+
+        self.con = connect(self.dbFile)
 
         self.initUI()
 
@@ -53,7 +61,7 @@ class MainWindow(QMainWindow):
             with open(self.configFile) as fh:
                 statusDict = json.load(fh)
             if statusDict.get('dbase') is not None:
-                self.database = os.path.abspath(statusDict.get('dbase'))
+                MainWindow.dbFile = os.path.abspath(statusDict.get('dbase'))
 
     def initUI(self):
         """Инициализация основных элементов интерфеса"""
