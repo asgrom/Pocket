@@ -31,6 +31,7 @@ def connect(db: str) -> sql.Connection:
         conn.load_extension(os.path.join(dirname, 'sqlite_ext/fts5.so'))
         conn.executescript("pragma foreign_keys=on;")
         create_tables(conn)
+        create_indexes(conn)
         return conn
     except sql.Error as e:
         logger.exception(f'Exception in connect to dbase\nDatabase file: {db}')
@@ -194,15 +195,20 @@ def delete_indexes(connector: sql.Connection):
             connector.executescript(
                 """
                 begin transaction;
-                drop index if exists page_title_idx;
-                drop index if exists page_tag_idx;
+                drop index if exists html_contents_id_page_idx;
+                drop index if exists webpages_title_idx;
+                drop index if exists webpages_time_saved_idx;
+                drop index if exists webpages_hash_idx;
+                drop index if exists tags_tag_idx;
+                drop index if exists webpagetags_id_page_idxl;
+                drop index if exists webpagetags_id_tag_idx;
                 commit;
                 """
             )
-    except sql.Error:
+    except sql.Error as e:
         logger.exception('Ошибка удаления индексов')
         connector.rollback()
-        close_connection(connector)
+        raise e
 
 
 def create_indexes(connector: sql.Connection):
@@ -212,15 +218,20 @@ def create_indexes(connector: sql.Connection):
             connector.executescript(
                 """
                 begin transaction;
-                create index if not exists page_title_idx on webpages (title);
-                create index if not exists page_tag_idx on webpagetags (id_page, id_tag);
+                CREATE UNIQUE INDEX IF NOT EXISTS html_contents_id_page_idx ON html_contents (id_page);
+                CREATE INDEX IF NOT EXISTS webpages_title_idx ON webpages (title COLLATE nocase);
+                CREATE INDEX IF NOT EXISTS webpages_time_saved_idx ON webpages (time_saved);
+                CREATE UNIQUE INDEX IF NOT EXISTS webpages_hash_idx ON webpages (hash);
+                CREATE INDEX IF NOT EXISTS tags_tag_idx ON tags (tag COLLATE nocase);
+                CREATE INDEX IF NOT EXISTS webpagetags_id_page_idx ON webpagetags (id_page);
+                CREATE INDEX IF NOT EXISTS webpagetags_id_tag_idx ON webpagetags (id_tag);
                 commit;
                 """
             )
-    except sql.Connection:
+    except sql.Error as e:
         logger.exception('Ошибка создания индексов')
         connector.rollback()
-        close_connection(connector)
+        raise e
 
 
 def add_article(title: str, url: str,
