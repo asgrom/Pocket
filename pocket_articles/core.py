@@ -46,7 +46,6 @@ def log_uncaught_exceptions(ex_cls, ex, tb):
     text = 'Uncaught exception\n{}: {}:\n'.format(ex_cls.__name__, ex)
     text += ''.join(traceback.format_tb(tb))
     logger.error(text)
-    # QMessageBox.critical(None, 'Ошибка выполнения', "Возникла ошибка.\nСмотри лог программы.")
     QMessageBox.critical(None, 'Ошибка выполнения', f"{ex}\nСмотри лог программы.")
     qApp.exit()
 
@@ -95,22 +94,6 @@ class Pocket(MainWindow):
 
         # меню сортировки статей
         self.sortGroup.triggered.connect(self.sortMenuTriggered)
-        # self.ui.actionSortTitleAsc.triggered.connect(
-        #     # lambda: self.articleTitleModel.changeSortOrder('title', 'asc')
-        #     lambda: self.sortMenuTriggered(self.TitleAsc)
-        # )
-        # self.ui.actionSortTitleDesc.triggered.connect(
-        #     # lambda: self.articleTitleModel.changeSortOrder('title', 'desc')
-        #     lambda: self.sortMenuTriggered(self.TitleDesc)
-        # )
-        # self.ui.actionSortDateAsc.triggered.connect(
-        #     # lambda: self.articleTitleModel.changeSortOrder('time_saved', 'asc')
-        #     lambda : self.sortMenuTriggered(self.TimeAsc)
-        # )
-        # self.ui.actionSortDateDesc.triggered.connect(
-        #     # lambda: self.articleTitleModel.changeSortOrder('time_saved', 'desc')
-        #     lambda: self.sortMenuTriggered(self.TimeDesc)
-        # )
 
         # выбор статьи для просмотра
         self.ui.articleView.activated.connect(self.open_webpage)

@@ -25,7 +25,6 @@ class MainWindow(QMainWindow):
     tagChanged = pyqtSignal()
     databaseChanged = pyqtSignal(sqlite3.Connection)
 
-    # dbFile = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'data/articles.db')
     dbFile = None
     configFile = os.path.join(os.path.dirname(__file__), 'config/config.json')
 
