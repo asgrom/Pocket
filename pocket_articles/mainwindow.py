@@ -1,7 +1,6 @@
 import json
 import os
 import sqlite3
-import sys
 
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -10,14 +9,14 @@ from PyQt5.QtWidgets import *
 
 from .dbmethods import connect
 from .delegate import Delegate
+from .dialog import Dialog
 from .mainui import Ui_MainUI
 from .searchpanel import SearchPanel
+from .sqlquery import SqlQuery
 from .tablemodel import TableModel
 from .tagcombobox import TagsComboBox
 from .tagmodel import TagModel
 from .treeviewproxymodel import TreeViewProxyModel
-from .sqlquery import SqlQuery
-from .dialog import Dialog
 
 
 class MainWindow(QMainWindow):
