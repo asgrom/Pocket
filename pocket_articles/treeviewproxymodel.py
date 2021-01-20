@@ -1,7 +1,14 @@
 """Изменяет сортировку в дереве тегов.
 
 Сортировка происходит в названиях тегов."""
+
 from PyQt5.QtCore import *
+
+AllArticles = 'all_articles'
+Tags = 'tags'
+Favorites = 'favorites'
+NoTags = 'notags'
+Line = 'line'
 
 
 class TreeViewProxyModel(QSortFilterProxyModel):
@@ -20,11 +27,13 @@ class TreeViewProxyModel(QSortFilterProxyModel):
             rightIdx (QModelIndex):
         """
         if not leftIdx.parent().isValid() or not rightIdx.parent().isValid():
-            if leftIdx.data() == 'Все статьи':
+            if rightIdx.data(Qt.UserRole) == Line or leftIdx.data(Qt.UserRole) == Line:
+                return False
+            if leftIdx.data(Qt.UserRole) == AllArticles:
                 return True
-            if leftIdx.data() == 'Без тегов' and rightIdx.data() in ('Теги', 'Избранное'):
+            if leftIdx.data(Qt.UserRole) == NoTags and rightIdx.data(Qt.UserRole) != AllArticles:
                 return True
-            if leftIdx.data() == 'Избранное' and rightIdx.data() == 'Теги':
+            if leftIdx.data(Qt.UserRole) == Favorites and rightIdx.data(Qt.UserRole) == Tags:
                 return True
             return False
         return super(TreeViewProxyModel, self).lessThan(leftIdx, rightIdx)

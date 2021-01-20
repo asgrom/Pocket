@@ -132,12 +132,24 @@ class Pocket(MainWindow):
         self.ui.actionImportTags.triggered.connect(self.import_tags)
 
         # фильтр к тегам в обозревателе тегов
-        self.ui.tagFilterLineEdit.textChanged.connect(self.tagProxyModel.setFilterRegExp)
+        self.ui.tagFilterLineEdit.textChanged.connect(self.setTagFilter)
         self.ui.tagFilterLineEdit.editingFinished.connect(self.ui.filterArticleLineEdit.clear)
         self.ui.tagFilterLineEdit.editingFinished.connect(self.ui.dbSearchLineEdit.clear)
 
         # удален тег из обозревателя тегов
         self.ui.tagsView.model().rowsRemoved.connect(self.tagCBox.completeModel)
+
+    @pyqtSlot(str)
+    def setTagFilter(self, text: str):
+        """Устанавливаем фильтр тегов в обозревателе тегов.
+
+        Если текущий индекс в selectionModel валидный, сбрасываем его, чтобы
+        при вводе фильтра не было обращений к базе, т.к. будет постоянно
+        меняться текущий индекс в модели выбора.
+        """
+        if self.ui.tagsView.selectionModel().currentIndex().isValid():
+            self.ui.tagsView.selectionModel().clearCurrentIndex()
+        self.tagProxyModel.setFilterRegExp(text)
 
     @pyqtSlot(QAction)
     def sortMenuTriggered(self, action):
