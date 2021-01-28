@@ -288,13 +288,14 @@ def add_tag(tag, cur: sql.Cursor):
 
 
 def export_articles(folder, cur: sql.Cursor):
+    # TODO: переделать!!!
     """Экспорт веб-страниц из базы"""
     count = 0
     for id_page, title in cur.execute("""select id, title from webpages;""").fetchall():
         content = cur.execute(
             """select html from html_contents where id_page=?;""", (id_page,)).fetchone()
         title = re.sub('[/?<>*"|]', '', title[:90])
-        title = re.sub('( ){2,}', ' ', title) + f'({dt.now()})' + '.html'
+        title = re.sub('( ){2,}', ' ', title) + f'({dt.now().strftime("%Y%m%d_%H%M%S")})' + '.html'
         fname = os.path.join(folder, title)
         with open(fname, 'w') as f:
             f.write(content[0])

@@ -92,7 +92,7 @@ class TagsComboBox(QComboBox):
     def changeWidth(self, text):
         """Меняем размер комбобокса по мере ввода текста."""
         width = self.lineEdit().fontMetrics().width(text)
-        self.setMinimumWidth(width + 50)
+        self.setMinimumWidth(width + 55)
 
     def showPopup(self):
         """расширяет всплывающее окно до ширины элементов"""

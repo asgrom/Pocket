@@ -121,6 +121,8 @@ class MainWindow(QMainWindow):
         self.articleTagsHBox.addWidget(self.tagCBox)
         self.articleTagsHBox.addStretch(1)  # пружина в конце бокса
         self.ui.articleViewFrameLayout.insertLayout(2, self.articleTagsHBox)
+        self.ui.pageTitleLineEdit.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        self.ui.pageTitleLineEdit.setPlaceholderText('Название статьи')
 
         ################################################################################
         # SearchPanel

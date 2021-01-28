@@ -67,7 +67,10 @@ class TableModel(QAbstractTableModel):
         self.endResetModel()
 
     def data(self, index: QModelIndex, role: int = ...) -> typing.Any:
-        """
+        """Выдем данные статьи
+
+        Колонку с датой преобразовываем из вида YMD в DMY.
+        Меняем фон нечетных строк меняем на альтернативный.
         Args:
             index (QModelIndex):
             role (int):
@@ -88,20 +91,29 @@ class TableModel(QAbstractTableModel):
                 return QApplication.palette().alternateBase()
         return
 
-    def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
-        """
-        Args:
-            row (int):
-            column (int):
-            parent (QModelIndex):
-        """
-        if row >= self.rowCount(parent):
-            while row >= self.rowCount(parent):
-                if self.canFetchMore(parent):
-                    self.fetchMore(parent)
-                else:
-                    break
-        return super().index(row, column, parent)
+    def setData(self, index: QModelIndex, value: typing.Any, role: int = ...) -> bool:
+        if not index.isValid():
+            return False
+        if role == Qt.DisplayRole:
+            self.dbData[index.row()][1] = value
+            self.dataChanged.emit(index, index, [role])
+            return True
+        return super().setData(index, value, role)
+
+    # def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
+    #     """
+    #     Args:
+    #         row (int):
+    #         column (int):
+    #         parent (QModelIndex):
+    #     """
+    #     if row >= self.rowCount(parent):
+    #         while row >= self.rowCount(parent):
+    #             if self.canFetchMore(parent):
+    #                 self.fetchMore(parent)
+    #             else:
+    #                 break
+    #     return super().index(row, column, parent)
 
     def canFetchMore(self, parent: QModelIndex) -> bool:
         """
@@ -109,8 +121,8 @@ class TableModel(QAbstractTableModel):
             parent (QModelIndex):
         """
         try:
-            self.chunkData = self.con.execute(
-                self.query, [self.number_rows, self._offset]).fetchall()
+            self.chunkData = [list(i) for i in self.con.execute(
+                self.query, [self.number_rows, self._offset])]
         except sqlite3.ProgrammingError:
             # logger.exception('Exception occurred in canFetchMore')
             return False
@@ -138,6 +150,8 @@ class TableModel(QAbstractTableModel):
         Args:
             parent (QModelIndex):
         """
+        if parent.isValid():
+            return 0
         return len(self.dbData)
 
     def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:

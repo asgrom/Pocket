@@ -290,14 +290,21 @@ QTreeView, QTableView {
 #filterArticleLineEdit,
 #dbSearchLineEdit,
 #tagFilterLineEdit,
+#pageTitleLineEdit,
 ArticleTag,
 QComboBox
 {
     border-width: 1px;
     border-style: outset;
-    border-radius: 10px;
+    border-radius: 8px;
     border-color: darkgrey;
     background-color: palette(window);
+    padding-left: 5px;
+}
+/* lineedit названия статьи */
+#pageTitleLineEdit:focus, #pageTitleLineEdit:hover
+{
+    background-color: palette(base);
 }
 
 /***********************************************************************

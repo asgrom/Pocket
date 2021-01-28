@@ -1,11 +1,11 @@
 # todo:
-#   ПОСМОТРЕТЬ ВОЗМОЖНОСТЬ В LABEL ОТОБРАЖАТЬ ТЕГИ И НЕПЕЧАТНЫЕ СИМВОЛЫ
+#   при открытии страницы запоминать индекс
+#   ИЗМЕНЯТЬ TITLE В HTML? ПРИ ИЗМЕНЕНИИ ЗАГОЛОВКА?
+#   пакетное изменение тегов
 #   ИЗМЕНИТЬ МЕТОД ПОЛУЧЕНИЯ ДАННЫх ИЗ СТРАНИЦЫ, ЧТОбЫ МОжНО бЫЛО
 #   ИМПОРТИРОВАТЬ MHTML
 #   ПЕРЕДЕЛАТЬ ЭКСПОРТ HTML (НАЗВАНИЯ СТАТЕЙ БРАТЬ НЕ ИЗ СТРАНИЦЫ А ИЗ БАЗЫ)
-#   ДОБАВИТЬ ВОЗМОЖНОСТЬ РЕДАКТИРОВАНИЯ НАЗВАНИЯ СТАТЕЙ.
 #   приделать тулбар
-#   1.1 ДОбАВИТЬ ВОЗМОЖНОСТЬ ОТКРЫТИЯ HTML В ОТДЕЛЬНОМ ОКНЕ.
 #   2. СДЕЛАТЬ ВОЗМОЖНОСТЬ ПЕРЕИМЕНОВАНИЯ ТЕГОВ В ДЕРЕВЕ ТЕГОВ.
 #   3. Сделать возможность импорта html по-выбору.
 #   4. Сделать возможность загрузки.
@@ -56,6 +56,7 @@ sys.excepthook = log_uncaught_exceptions
 
 class Pocket(MainWindow):
     """Класс содержит основные методы графического интерфейса."""
+
     def __init__(self, parent=None):
         super(Pocket, self).__init__(parent)
         self._currentOpenedPageID = None
@@ -76,9 +77,6 @@ class Pocket(MainWindow):
         # новое соединение с базой данных
         self.databaseChanged.connect(self.tagCBox.setDatabaseConnector)
         self.databaseChanged.connect(self.articleTagModel.setDatabaseConnector)
-        self.databaseChanged.connect(
-            lambda x: self.articleTitleModel.setDatabaseConnector(x, self.currentSqlQuery)
-        )
 
         # импортированы новые html
         self.htmlImported.connect(self.articleTitleModel.resetModel)
@@ -97,7 +95,7 @@ class Pocket(MainWindow):
         self.sortGroup.triggered.connect(self.sortMenuTriggered)
 
         # выбор статьи для просмотра
-        self.ui.articleView.activated.connect(self.open_webpage)
+        self.ui.articleView.clicked.connect(self.open_webpage)
 
         # выбор в комбобоксе
         # noinspection PyUnresolvedReferences
@@ -141,6 +139,12 @@ class Pocket(MainWindow):
         # удален тег из обозревателя тегов
         self.ui.tagsView.model().rowsRemoved.connect(self.tagCBox.completeModel)
 
+        # устанавливаем размер QLineEdit названия статьи
+        self.ui.pageTitleLineEdit.textChanged.connect(self.setSizeTileLineEdit)
+
+        # изменение названия статьи
+        self.ui.pageTitleLineEdit.returnPressed.connect(self.articleTitleChanged)
+
     @pyqtSlot(str)
     def setTagFilter(self, text: str):
         """Устанавливаем фильтр тегов в обозревателе тегов.
@@ -167,11 +171,42 @@ class Pocket(MainWindow):
         query = SqlQuery.get_sql_query(self.currentSqlQuery, self.sortColumn, self.sortOrder)
         self.articleTitleModel.changeSqlQuery(query)
 
+    @pyqtSlot()
+    def articleTitleChanged(self):
+        """Изменяем назавание статьи"""
+        self.ui.pageTitleLineEdit.clearFocus()
+        txt = self.ui.pageTitleLineEdit.text()
+        if not txt:
+            return
+        idx = self.ui.articleView.currentIndex()
+        if not idx.isValid():
+            return
+        try:
+            self.con.execute(
+                'update webpages set title = ? where id = ?;',
+                [txt, self._currentOpenedPageID]
+            )
+        except sql.Error:
+            logger.exception('Exception change title of article')
+            self.con.rollback()
+        else:
+            self.con.commit()
+            self.articleTitleModel.setData(idx, txt, Qt.DisplayRole)
+            QMessageBox.information(self, '', 'Название статьи изменено')
+
+    @pyqtSlot()
+    def setSizeTileLineEdit(self):
+        """Устанавливаем размер QLineEdit названия статьи в зависимости от
+        длины текста."""
+        fm = self.ui.pageTitleLineEdit.fontMetrics()
+        w = fm.width(self.ui.pageTitleLineEdit.text()) + 20
+        self.ui.pageTitleLineEdit.setMinimumWidth(w)
+
     def testConnection(self):
-        print('signal connected main class')
-        r = QMessageBox.question(self, '', 'expand?', defaultButton=QMessageBox.Yes)
-        if r == QMessageBox.Yes:
-            self.ui.tagsView.expandAll()
+        print(f'signal connected {self.sender()}')
+        fm = self.ui.pageTitleLineEdit.fontMetrics()
+        w = fm.width(self.ui.pageTitleLineEdit.text()) + 20
+        self.ui.pageTitleLineEdit.setMinimumWidth(w)
 
     @pyqtSlot()
     def import_tags(self):
@@ -308,8 +343,12 @@ class Pocket(MainWindow):
     def open_other_db(self):
         """Открывает другую базу данных"""
         homedir = QStandardPaths.writableLocation(QStandardPaths.HomeLocation)
-        db_path, _ = QFileDialog.getOpenFileName(self, 'Открыть базу данных', homedir,
-                                                 "SQLite (*.sqlite *.sqlite3 *.db);;All (*)")
+        db_path, _ = QFileDialog.getOpenFileName(
+            self,
+            'Открыть базу данных',
+            homedir,
+            "SQLite (*.sqlite *.sqlite3 *.db);;All (*)"
+        )
         if not db_path:
             return
         try:
@@ -319,12 +358,15 @@ class Pocket(MainWindow):
         except Exception:
             logger.exception('Ошибка соединения с базой')
             QMessageBox.critical(self, '', 'Ошибка соединения с базой данных')
-            return
-        self.currentSqlQuery = SqlQuery.get_sql_query(SqlQuery.all_html, self.sortColumn, self.sortOrder)
-        self.databaseChanged.emit(self.con)
+        else:
+            self.currentSqlQuery = SqlQuery.all_html
+            query = SqlQuery.get_sql_query(self.currentSqlQuery, self.sortColumn, self.sortOrder)
+            self.articleTitleModel.setDatabaseConnector(self.con, query)
+            self.databaseChanged.emit(self.con)
 
     @pyqtSlot()
     def export_article_to_html(self):
+        # TODO: переделать!!!
         """Экспорт выделенной статьи в HTML"""
         folder = self.get_dir_name()
         if not folder:
@@ -337,7 +379,7 @@ class Pocket(MainWindow):
                     """select html from html_contents where id_page=?""", [idx.data(ID)]
                 ).fetchone()[-1]
                 fname = re.sub('[/?<>*"|]', '', idx.data(Qt.DisplayRole)[:90])
-                fname = re.sub('( ){2,}', ' ', fname) + f'({dt.now()})' + '.html'
+                fname = re.sub('( ){2,}', ' ', fname) + f'({dt.now().strftime("%Y%m%d_%H%M%S")})' + '.html'
                 fpath = os.path.join(folder, fname)
                 with open(fpath, 'w') as f:
                     f.write(content)
@@ -354,9 +396,9 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def delete_article_tag(self, tag: str):
         """Удаляет тег у статьи в базе"""
-        # if not self.ui.articleView.currentIndex().isValid():
-        #     return
-        # cur_index = self.ui.articleView.currentIndex()
+        if not self.ui.articleView.currentIndex().isValid():
+            return
+        cur_index = self.ui.articleView.currentIndex()
         sql_request = """
             delete from webpagetags where id_page=? and 
             id_tag=(select id from tags where tag = ?);
@@ -635,7 +677,7 @@ class Pocket(MainWindow):
         with open(self._tmphtmlfile, 'w') as fh:
             fh.write(html)
         self.ui.webView.load(QUrl.fromLocalFile(self._tmphtmlfile))
-        self.ui.pageTitleLabel.setText(index.data())
+        self.ui.pageTitleLineEdit.setText(index.data())
         self.ui.urlLabel.setText(f'<a href="{url}">{url}</a>')
         self.tagCBox.setEnabled(True)
         self._currentOpenedPageID = index.data(ID)
@@ -669,8 +711,8 @@ def main():
     from qtl18n_ru import localization
     localization.setupRussianLang(app)
 
-    fh = QFile(':/css/stylesheet.qss')
-    # fh = QFile('/home/alexandr/PycharmProjects/Pocket/pocket_articles/css/stylesheet.qss')
+    # fh = QFile(':/css/stylesheet.qss')
+    fh = QFile('/home/alexandr/PycharmProjects/Pocket/pocket_articles/css/stylesheet.qss')
     if fh.open(QIODevice.ReadOnly | QIODevice.Text):
         app.setStyleSheet(QTextStream(fh).readAll())
 
