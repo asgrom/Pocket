@@ -59,7 +59,7 @@ class Pocket(MainWindow):
 
     def __init__(self, parent=None):
         super(Pocket, self).__init__(parent)
-        self._currentOpenedPageID = None
+        self._currentOpenPageIndex = QModelIndex()
         self._tmphtmlfile = None
         self.connect_slots()
 
@@ -184,7 +184,7 @@ class Pocket(MainWindow):
         try:
             self.con.execute(
                 'update webpages set title = ? where id = ?;',
-                [txt, self._currentOpenedPageID]
+                [txt, self._currentOpenPageIndex.data(ID)]
             )
         except sql.Error:
             logger.exception('Exception change title of article')
@@ -396,15 +396,14 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def delete_article_tag(self, tag: str):
         """Удаляет тег у статьи в базе"""
-        if not self.ui.articleView.currentIndex().isValid():
-            return
-        cur_index = self.ui.articleView.currentIndex()
+        # if not self.ui.articleView.currentIndex().isValid():
+        #     return
         sql_request = """
             delete from webpagetags where id_page=? and 
             id_tag=(select id from tags where tag = ?);
             """
         try:
-            self.con.execute(sql_request, [self._currentOpenedPageID, tag])
+            self.con.execute(sql_request, [self._currentOpenPageIndex.data(ID), tag])
             self.con.commit()
             self.tagChanged.emit()
         except sql.Error:
@@ -514,7 +513,7 @@ class Pocket(MainWindow):
         cur = self.con.cursor()
         cur.execute('begin transaction;')
         try:
-            cur.execute(insert_article_tag, [self._currentOpenedPageID, self.tagCBox.itemData(index, ID)])
+            cur.execute(insert_article_tag, [self._currentOpenPageIndex.data(ID), self.tagCBox.itemData(index, ID)])
         except sql.DatabaseError:
             self.con.rollback()
             logger.warning('Ошибка установки тега {}\n{}'.format(
@@ -645,8 +644,19 @@ class Pocket(MainWindow):
 
     @pyqtSlot(QModelIndex)
     def open_webpage(self, index: QModelIndex):
-        """Загрузка статьи"""
+        """Загрузка статьи
+
+        При удачном открытии статьи сохраняем в атрибут класса
+        'self._currentOpenPageIndex' QPersistentModelIndex.
+
+        Если текущий индекс статьи совпадает с текущим индексом модели
+        отображения списка статей, то ничего не делаем. Это позволяет нам
+        не открывать по-новой статью, которая уже открыта.
+        """
+
         if not index.isValid():
+            return
+        if index == self._currentOpenPageIndex:
             return
         self.ui.webView.findText('')  # сбрасываем поиск текста на странице
         QApplication.setOverrideCursor(Qt.WaitCursor)
@@ -680,7 +690,8 @@ class Pocket(MainWindow):
         self.ui.pageTitleLineEdit.setText(index.data())
         self.ui.urlLabel.setText(f'<a href="{url}">{url}</a>')
         self.tagCBox.setEnabled(True)
-        self._currentOpenedPageID = index.data(ID)
+        # self._currentOpenPageIndex = index.data(ID)
+        self._currentOpenPageIndex = QPersistentModelIndex(index)
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:
