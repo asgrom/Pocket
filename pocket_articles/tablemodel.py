@@ -188,3 +188,8 @@ class TableModel(QAbstractTableModel):
         if status:
             return True
         return False
+
+    def flags(self, index: QModelIndex):
+        if not index.isValid():
+            return Qt.NoItemFlags
+        return Qt.ItemIsEnabled | Qt.ItemIsSelectable

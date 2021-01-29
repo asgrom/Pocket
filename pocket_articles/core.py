@@ -656,6 +656,7 @@ class Pocket(MainWindow):
 
         if not index.isValid():
             return
+        index = index.model().index(index.row(), 1, QModelIndex())
         if index == self._currentOpenPageIndex:
             return
         self.ui.webView.findText('')  # сбрасываем поиск текста на странице
@@ -690,7 +691,6 @@ class Pocket(MainWindow):
         self.ui.pageTitleLineEdit.setText(index.data())
         self.ui.urlLabel.setText(f'<a href="{url}">{url}</a>')
         self.tagCBox.setEnabled(True)
-        # self._currentOpenPageIndex = index.data(ID)
         self._currentOpenPageIndex = QPersistentModelIndex(index)
         QApplication.restoreOverrideCursor()
 

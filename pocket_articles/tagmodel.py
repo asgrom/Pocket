@@ -36,6 +36,7 @@ class TagModel(QStandardItemModel):
         all_articles = QStandardItem('Все статьи')
         all_articles.setData('all_articles', ID)
         all_articles.setData(article_count, COUNT)
+        all_articles.setData(0, Qt.UserRole + 2)
         all_articles.setIcon(QIcon(QPixmap(':/images/catalog.png')))
         all_articles.setEditable(False)
         return all_articles
@@ -54,6 +55,7 @@ class TagModel(QStandardItemModel):
                                  [favorites_id]).fetchone()[0]
         favorites.setData(favorites_id, ID)
         favorites.setData(count, COUNT)
+        favorites.setData(4, Qt.UserRole + 2)
         favorites.setIcon(QIcon(QPixmap(':/images/rating.png')))
         favorites.setEditable(False)
         return favorites
@@ -62,6 +64,7 @@ class TagModel(QStandardItemModel):
         """Создает QStandardItem с изображением линии."""
         line = QStandardItem()
         line.setData('line', ID)
+        line.setData(1, Qt.UserRole + 2)
         line.setFlags(Qt.NoItemFlags)
         return line
 
@@ -71,6 +74,7 @@ class TagModel(QStandardItemModel):
         notags = QStandardItem('Без тегов')
         notags.setData('notags', ID)
         notags.setData(notags_count, COUNT)
+        notags.setData(2, Qt.UserRole + 2)
         notags.setIcon(QIcon(QPixmap(':/images/view.png')))
         notags.setEditable(False)
         return notags
@@ -81,6 +85,7 @@ class TagModel(QStandardItemModel):
         tags.setFlags(Qt.NoItemFlags)
         tags.setIcon(QIcon(QPixmap(':/images/tags.png')))
         tags.setData('tags', ID)
+        tags.setData(6, Qt.UserRole + 2)
         for tag, count, id_ in self.con.execute(self.query_count_tagged_html):
             if id_ == favorites_id:
                 continue
@@ -103,9 +108,13 @@ class TagModel(QStandardItemModel):
         self.appendRow(all_articles)
         self.appendRow(line)
         self.appendRow(notags)
-        self.appendRow(QStandardItem(line))
+        line = QStandardItem(line)
+        line.setData(3, Qt.UserRole + 2)
+        self.appendRow(line)
         self.appendRow(favorites)
-        self.appendRow(QStandardItem(line))
+        line = QStandardItem(line)
+        line.setData(5, Qt.UserRole + 2)
+        self.appendRow(line)
         self.appendRow(tags)
 
     @pyqtSlot()
