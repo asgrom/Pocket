@@ -1,5 +1,3 @@
-# todo:
-#   сделать заполнение модели здесь?
 import sqlite3
 
 from PyQt5.QtCore import *

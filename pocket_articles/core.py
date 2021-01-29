@@ -178,13 +178,13 @@ class Pocket(MainWindow):
         txt = self.ui.pageTitleLineEdit.text()
         if not txt:
             return
-        idx = self.ui.articleView.currentIndex()
-        if not idx.isValid():
+        if not self._currentOpenPageIndex.isValid():
             return
+        idx = QModelIndex(self._currentOpenPageIndex)
         try:
             self.con.execute(
                 'update webpages set title = ? where id = ?;',
-                [txt, self._currentOpenPageIndex.data(ID)]
+                [txt, idx.data(ID)]
             )
         except sql.Error:
             logger.exception('Exception change title of article')

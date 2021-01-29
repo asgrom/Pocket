@@ -10,6 +10,7 @@ logger = applogger.get_logger(__name__)
 
 
 class ArticleModel(QAbstractTableModel):
+    """Модель со статьями"""
 
     def __init__(self, con: sqlite3.Connection, query: str,
                  number_rows=100, parent: QWidget = None):
@@ -60,11 +61,8 @@ class ArticleModel(QAbstractTableModel):
         Args:
             query (str): Запрос к базе данных.
         """
-        self.beginResetModel()
         self.query = query
-        self._offset = 0
-        self.dbData.clear()
-        self.endResetModel()
+        self.resetModel()
 
     def data(self, index: QModelIndex, role: int = ...) -> typing.Any:
         """Выдем данные статьи

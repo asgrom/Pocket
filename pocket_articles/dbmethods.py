@@ -288,7 +288,6 @@ def add_tag(tag, cur: sql.Cursor):
 
 
 def export_articles(folder, cur: sql.Cursor):
-    # TODO: переделать!!!
     """Экспорт веб-страниц из базы"""
     count = 0
     for id_page, title in cur.execute("""select id, title from webpages;""").fetchall():
