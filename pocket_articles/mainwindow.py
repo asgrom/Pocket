@@ -13,7 +13,7 @@ from .dialog import Dialog
 from .mainui import Ui_MainUI
 from .searchpanel import SearchPanel
 from .sqlquery import SqlQuery
-from .tablemodel import TableModel
+from .articlemodel import ArticleModel
 from .tagcombobox import TagsComboBox
 from .tagmodel import TagModel
 from .treeviewproxymodel import TreeViewProxyModel
@@ -84,7 +84,7 @@ class MainWindow(QMainWindow):
         # отображение списка статей
         ################################################################################
         query = SqlQuery.get_sql_query(self.currentSqlQuery, self.sortColumn, self.sortOrder)
-        self.articleTitleModel = TableModel(self.con, query)
+        self.articleTitleModel = ArticleModel(self.con, query)
         self.articleTitleModel.setObjectName('ArticleList')
         self.ui.articleView.setSortingEnabled(False)
         self.ui.articleView.verticalHeader().setVisible(True)

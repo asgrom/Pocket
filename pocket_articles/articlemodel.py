@@ -9,7 +9,7 @@ from . import applogger
 logger = applogger.get_logger(__name__)
 
 
-class TableModel(QAbstractTableModel):
+class ArticleModel(QAbstractTableModel):
 
     def __init__(self, con: sqlite3.Connection, query: str,
                  number_rows=100, parent: QWidget = None):
@@ -21,7 +21,7 @@ class TableModel(QAbstractTableModel):
                 запрос, (default 100)
             parent (QWidget):
         """
-        super(TableModel, self).__init__(parent)
+        super(ArticleModel, self).__init__(parent)
         self.con = con
         self.number_rows = number_rows  # количество строк для считывания из базы
         self.query = query
@@ -170,7 +170,7 @@ class TableModel(QAbstractTableModel):
         """
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return self.horizontalHeaderLabels[section]
-        return super(TableModel, self).headerData(section, orientation, role)
+        return super(ArticleModel, self).headerData(section, orientation, role)
 
     def removeRow(self, row: int, parent: QModelIndex = QModelIndex()) -> bool:
         """
