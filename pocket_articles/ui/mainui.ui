@@ -474,6 +474,9 @@
    <property name="text">
     <string>Открыть другую базу</string>
    </property>
+   <property name="statusTip">
+    <string>Открыть другую базу данных</string>
+   </property>
   </action>
   <action name="actionSortDateDesc">
    <property name="checkable">

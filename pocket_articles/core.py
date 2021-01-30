@@ -174,6 +174,8 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def articleTitleChanged(self):
         """Изменяем назавание статьи"""
+        # todo:
+        #   вносить изменения также в таблицу fts5
         self.ui.pageTitleLineEdit.clearFocus()
         txt = self.ui.pageTitleLineEdit.text()
         if not txt:
@@ -191,7 +193,7 @@ class Pocket(MainWindow):
             self.con.rollback()
         else:
             self.con.commit()
-            self.articleTitleModel.setData(idx, txt, Qt.DisplayRole)
+            self.articleTitleModel.refreshData()
             QMessageBox.information(self, '', 'Название статьи изменено')
 
     @pyqtSlot()

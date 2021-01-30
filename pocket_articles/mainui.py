@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-
-# Form implementation generated from reading ui file '/home/alexandr/PycharmProjects/Pocket/pocket_articles/ui/mainui.ui'
-#
 # Created by: PyQt5 UI code generator 5.15.2
 #
 # WARNING: Any manual changes made to this file will be lost when pyuic5 is
@@ -9,6 +6,8 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtWebEngineWidgets
+from . import resources
 
 
 class Ui_MainUI(object):
@@ -274,6 +273,7 @@ class Ui_MainUI(object):
         self.actionAppAuth.setText(_translate("MainUI", "Аутентификация в Pocket"))
         self.actionAppAuth.setStatusTip(_translate("MainUI", "Аутентификация приложения в Pocket"))
         self.actionOpenDbase.setText(_translate("MainUI", "Открыть другую базу"))
+        self.actionOpenDbase.setStatusTip(_translate("MainUI", "Открыть другую базу данных"))
         self.actionSortDateDesc.setText(_translate("MainUI", "Дата [desc]"))
         self.actionSortDateAsc.setText(_translate("MainUI", "Дата [asc]"))
         self.actionSortTitleDesc.setText(_translate("MainUI", "Название [desc]"))
@@ -287,5 +287,3 @@ class Ui_MainUI(object):
         self.actionImportTags.setStatusTip(_translate("MainUI", "Импорт тегов из json файла"))
         self.actionImportArticleTags.setText(_translate("MainUI", "Импорт тегов статей"))
         self.actionImportArticleTags.setStatusTip(_translate("MainUI", "Импорт тегов статей из json файла"))
-from PyQt5 import QtWebEngineWidgets
-from . import resources

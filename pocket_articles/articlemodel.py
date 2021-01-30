@@ -89,14 +89,15 @@ class ArticleModel(QAbstractTableModel):
                 return QApplication.palette().alternateBase()
         return
 
-    def setData(self, index: QModelIndex, value: typing.Any, role: int = ...) -> bool:
-        if not index.isValid():
-            return False
-        if role == Qt.DisplayRole:
-            self.dbData[index.row()][1] = value
-            self.dataChanged.emit(index, index, [role])
-            return True
-        return super().setData(index, value, role)
+    def refreshData(self):
+        """Обновляет данные в модели."""
+        self.layoutAboutToBeChanged.emit()
+        self.dbData = self.con.execute(self.query, [self._offset, 0]).fetchall()
+        self.changePersistentIndexList(
+            self.persistentIndexList(),
+            [QModelIndex() for _ in range(len(self.persistentIndexList()))]
+        )
+        self.layoutChanged.emit()
 
     # def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
     #     """
@@ -119,8 +120,9 @@ class ArticleModel(QAbstractTableModel):
             parent (QModelIndex):
         """
         try:
-            self.chunkData = [list(i) for i in self.con.execute(
-                self.query, [self.number_rows, self._offset])]
+            self.chunkData = self.con.execute(
+                self.query,
+                [self.number_rows, self._offset]).fetchall()
         except sqlite3.ProgrammingError:
             # logger.exception('Exception occurred in canFetchMore')
             return False
