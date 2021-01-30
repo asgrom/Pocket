@@ -174,8 +174,6 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def articleTitleChanged(self):
         """Изменяем назавание статьи"""
-        # todo:
-        #   вносить изменения также в таблицу fts5
         self.ui.pageTitleLineEdit.clearFocus()
         txt = self.ui.pageTitleLineEdit.text()
         if not txt:
@@ -184,15 +182,18 @@ class Pocket(MainWindow):
             return
         idx = QModelIndex(self._currentOpenPageIndex)
         try:
-            self.con.execute(
-                'update webpages set title = ? where id = ?;',
-                [txt, idx.data(ID)]
+            self.con.executescript(
+                """
+                begin transaction;
+                update webpages set title = '{title}' where id = '{id}';
+                update search_table set title = '{title}' where id_page match '{id}';
+                commit;
+                """.format(title=txt, id=idx.data(ID))
             )
         except sql.Error:
             logger.exception('Exception change title of article')
             self.con.rollback()
         else:
-            self.con.commit()
             self.articleTitleModel.refreshData()
             QMessageBox.information(self, '', 'Название статьи изменено')
 

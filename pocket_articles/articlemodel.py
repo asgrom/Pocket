@@ -119,6 +119,7 @@ class ArticleModel(QAbstractTableModel):
         Args:
             parent (QModelIndex):
         """
+        # todo: ПЕРЕДЕЛАТЬ МЕТОД!
         try:
             self.chunkData = self.con.execute(
                 self.query,
