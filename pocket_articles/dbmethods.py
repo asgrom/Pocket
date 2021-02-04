@@ -111,8 +111,8 @@ def create_tables(connector: sql.Connection):
                 
                 create table if not exists 'webpagetags'(
                 'id' integer primary key autoincrement,
-                'id_page' integer,
-                'id_tag' integer,
+                'id_page' integer not null,
+                'id_tag' integer not null,
                 unique (id_page, id_tag),
                 constraint fk_id_page foreign key (id_page) references webpages (id)
                     on update cascade on delete cascade,

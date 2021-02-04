@@ -1,10 +1,12 @@
 # todo:
-#   при открытии страницы запоминать индекс
+#   ПЕРЕСМОТРЕТЬ ОТКРЫТИЕ СТРАНИЦ. УДАЛЕНИЕ, ДОБАВЛЕНИЕ ТЕГОВ.
+#   ПЕРЕСМОТРЕТЬ ТЕКУЩИЙ ИНДЕКС, Т.К. НА НЕГО ЗАВЯЗАНО ВЫШЕНАПИСАННОЕ.
+#
+#   __при открытии страницы запоминать ID статьи в базе???__
 #   ИЗМЕНЯТЬ TITLE В HTML? ПРИ ИЗМЕНЕНИИ ЗАГОЛОВКА?
 #   пакетное изменение тегов
 #   ИЗМЕНИТЬ МЕТОД ПОЛУЧЕНИЯ ДАННЫх ИЗ СТРАНИЦЫ, ЧТОбЫ МОжНО бЫЛО
 #   ИМПОРТИРОВАТЬ MHTML
-#   ПЕРЕДЕЛАТЬ ЭКСПОРТ HTML (НАЗВАНИЯ СТАТЕЙ БРАТЬ НЕ ИЗ СТРАНИЦЫ А ИЗ БАЗЫ)
 #   приделать тулбар
 #   2. СДЕЛАТЬ ВОЗМОЖНОСТЬ ПЕРЕИМЕНОВАНИЯ ТЕГОВ В ДЕРЕВЕ ТЕГОВ.
 #   3. Сделать возможность импорта html по-выбору.
@@ -110,7 +112,7 @@ class Pocket(MainWindow):
         self.ui.tagsView.selectionModel().currentChanged.connect(self.tag_selected)
 
         # поиск по базе
-        self.ui.dbSearchLineEdit.returnPressed.connect(self.search_on_database)
+        self.ui.dbSearchLineEdit.returnPressed.connect(self.full_text_search)
         self.ui.dbSearchLineEdit.returnPressed.connect(self.ui.filterArticleLineEdit.clear)
         self.ui.dbSearchLineEdit.returnPressed.connect(self.ui.tagFilterLineEdit.clear)
 
@@ -180,15 +182,16 @@ class Pocket(MainWindow):
             return
         if not self._currentOpenPageIndex.isValid():
             return
-        idx = QModelIndex(self._currentOpenPageIndex)
         try:
             self.con.executescript(
                 """
                 begin transaction;
-                update webpages set title = '{title}' where id = '{id}';
-                update search_table set title = '{title}' where id_page match '{id}';
+                update webpages set title = '{title}'
+                where id = '{id}';
+                update search_table set title = '{title}'
+                where id_page match '{id}';
                 commit;
-                """.format(title=txt, id=idx.data(ID))
+                """.format(title=txt, id=self._currentOpenPageIndex.data(ID))
             )
         except sql.Error:
             logger.exception('Exception change title of article')
@@ -207,9 +210,7 @@ class Pocket(MainWindow):
 
     def testConnection(self):
         print(f'signal connected {self.sender()}')
-        fm = self.ui.pageTitleLineEdit.fontMetrics()
-        w = fm.width(self.ui.pageTitleLineEdit.text()) + 20
-        self.ui.pageTitleLineEdit.setMinimumWidth(w)
+        self.setWindowModified(not self.isWindowModified())
 
     @pyqtSlot()
     def import_tags(self):
@@ -399,8 +400,8 @@ class Pocket(MainWindow):
     @pyqtSlot()
     def delete_article_tag(self, tag: str):
         """Удаляет тег у статьи в базе"""
-        # if not self.ui.articleView.currentIndex().isValid():
-        #     return
+        if not self._currentOpenPageIndex.isValid():
+            return
         sql_request = """
             delete from webpagetags where id_page=? and 
             id_tag=(select id from tags where tag = ?);
@@ -464,7 +465,7 @@ class Pocket(MainWindow):
             QApplication.restoreOverrideCursor()
 
     @pyqtSlot()
-    def search_on_database(self):
+    def full_text_search(self):
         if not self.ui.dbSearchLineEdit.text():
             return
         self.ui.tagsView.setCurrentIndex(QModelIndex())
@@ -512,11 +513,16 @@ class Pocket(MainWindow):
 
         Если статья уже имеет тег, который задается, то при добавлении в базу присходит исключение - так исключается
         дублирование."""
+
+        if not self._currentOpenPageIndex.isValid():
+            return
         insert_article_tag = """insert into webpagetags (id_page, id_tag) VALUES (?, ?)"""
-        cur = self.con.cursor()
-        cur.execute('begin transaction;')
+        self.con.execute('begin transaction;')
         try:
-            cur.execute(insert_article_tag, [self._currentOpenPageIndex.data(ID), self.tagCBox.itemData(index, ID)])
+            self.con.execute(insert_article_tag,
+                             [self._currentOpenPageIndex.data(ID),
+                              self.tagCBox.itemData(index, ID)]
+                             )
         except sql.DatabaseError:
             self.con.rollback()
             logger.warning('Ошибка установки тега {}\n{}'.format(
@@ -529,8 +535,6 @@ class Pocket(MainWindow):
                 ArticleTag(self.tagCBox.itemText(index))
             )
             self.tagChanged.emit()
-        finally:
-            cur.close()
 
     @pyqtSlot()
     def export_db_to_html(self):
@@ -656,6 +660,9 @@ class Pocket(MainWindow):
         отображения списка статей, то ничего не делаем. Это позволяет нам
         не открывать по-новой статью, которая уже открыта.
         """
+        # todo:
+        #   ОПЯТЬ ПЕРЕСМОТРЕТЬ МЕТОД
+        #   ДОЛБАНЫЙ ИНДЕКС
 
         if not index.isValid():
             return
@@ -698,7 +705,6 @@ class Pocket(MainWindow):
         QApplication.restoreOverrideCursor()
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        # self.articleTitleModel.deleteLater()
         if self.con:
             self.con.close()
         try:

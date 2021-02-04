@@ -79,6 +79,7 @@ class MainWindow(QMainWindow):
         # self.ui.articleViewFrame.setContentsMargins(0, 0, 0, 0)
         self.ui.articleViewFrameLayout.setContentsMargins(5, 5, 5, 0)
         self.changePalette()
+        self.setWindowTitle('Pocket Article Viewer[*]')
 
         ################################################################################
         # отображение списка статей
