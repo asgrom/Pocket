@@ -40,7 +40,7 @@ def get_data_from_page(page):
     root = html.parse(page, parser=Parser).getroot()  # type root: lxml.etree.ElementTree
 
     # 'head' tag
-    title = root[1].xpath('./title/text()')[0].strip()
+    title = root.xpath('.//title/text()')[0].strip()
 
     # 'comment' parsing
     # get page url
@@ -48,13 +48,13 @@ def get_data_from_page(page):
         i = i.strip()
         if i.startswith('info'):
             url, saved_date = re.findall(r'\((.+?)\)', i)
-        # if i.startswith('url'):
-        #     url = i.split(': ')[-1]
-        # elif i.startswith('saved date:'):
-        #     saved_date = i.strip()
-        #     saved_date = re.search(r'^.+: ([^G]+) G.+', saved_date)
-        #     saved_date = dp.parse(saved_date.group(1))
-        #     saved_date = saved_date.strftime('%Y-%m-%d %H:%M:%S')
+        if i.startswith('url'):
+            url = i.split(': ')[-1]
+        elif i.startswith('saved date:'):
+            saved_date = i.strip()
+            saved_date = re.search(r'^.+: ([^G]+) G.+', saved_date)
+            saved_date = dp.parse(saved_date.group(1))
+            saved_date = saved_date.strftime('%Y-%m-%d %H:%M:%S')
     return title, url, saved_date
 
 

@@ -1,7 +1,7 @@
 # todo:
 #   ПЕРЕСМОТРЕТЬ ОТКРЫТИЕ СТРАНИЦ. УДАЛЕНИЕ, ДОБАВЛЕНИЕ ТЕГОВ.
 #   ПЕРЕСМОТРЕТЬ ТЕКУЩИЙ ИНДЕКС, Т.К. НА НЕГО ЗАВЯЗАНО ВЫШЕНАПИСАННОЕ.
-#
+#   ПЕРЕИМЕНОВАНИЕ СТАТЬИ ПРИ ФИЛЬТРЕ СТАТЕЙ ВЫЗЫВАЕТ ОШИБКУ
 #   __при открытии страницы запоминать ID статьи в базе???__
 #   ИЗМЕНЯТЬ TITLE В HTML? ПРИ ИЗМЕНЕНИИ ЗАГОЛОВКА?
 #   пакетное изменение тегов
@@ -25,6 +25,10 @@ import tempfile
 import traceback
 from datetime import datetime as dt
 
+# from PyQt6.QtCore import *
+# from PyQt6.QtGui import *
+# from PyQt5.QtWebEngineWidgets import *
+# from PyQt6.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWebEngineWidgets import *
@@ -97,7 +101,7 @@ class Pocket(MainWindow):
         self.sortGroup.triggered.connect(self.sortMenuTriggered)
 
         # выбор статьи для просмотра
-        self.ui.articleView.clicked.connect(self.open_webpage)
+        self.ui.articleView.selectionModel().currentChanged.connect(self.open_webpage)
 
         # выбор в комбобоксе
         # noinspection PyUnresolvedReferences
@@ -155,8 +159,8 @@ class Pocket(MainWindow):
         при вводе фильтра не было обращений к базе, т.к. будет постоянно
         меняться текущий индекс в модели выбора.
         """
-        if self.ui.tagsView.selectionModel().currentIndex().isValid():
-            self.ui.tagsView.selectionModel().clearCurrentIndex()
+        # if self.ui.tagsView.selectionModel().currentIndex().isValid():
+        self.ui.tagsView.selectionModel().clearCurrentIndex()
         self.tagProxyModel.setFilterRegExp(text)
 
     @pyqtSlot(QAction)
@@ -210,7 +214,7 @@ class Pocket(MainWindow):
 
     def testConnection(self):
         print(f'signal connected {self.sender()}')
-        self.setWindowModified(not self.isWindowModified())
+        print(self.articleTitleModel.index(0, 1, QModelIndex()).data())
 
     @pyqtSlot()
     def import_tags(self):
@@ -444,25 +448,34 @@ class Pocket(MainWindow):
         try:
             QApplication.setOverrideCursor(Qt.WaitCursor)
             self.con.execute('begin transaction;')
+
             for idx in selectedRowsIdx:
                 self.con.executescript("""
                     delete from webpages where id = {0};
                     delete from search_table where id_page match {0};""".format(idx.data(ID)))
                 logger.info(f'Удалена статья "{idx.data(Qt.DisplayRole)}"')
+
             self.con.commit()
-
-            # вызываем обновление количества статей с тегами.
-            self.tagChanged.emit()
-
-            for idx in selectedRowsIdx:
-                self.articleTitleModel.removeRow(idx.row())
-            QMessageBox.information(self, '', 'Удаление завершено', QMessageBox.Ok)
         except sql.Error:
             self.con.rollback()
             logger.exception('Exception in delete_article')
             QMessageBox.critical(self, 'Ошибка!', 'Ошибка удаления статьи из базы')
+            return
         finally:
             QApplication.restoreOverrideCursor()
+
+        # вызываем обновление количества статей с тегами.
+        self.tagChanged.emit()
+
+        for idx in selectedRowsIdx:
+            self.articleTitleModel.removeRow(idx.row())
+
+        self._currentOpenPageIndex = QPersistentModelIndex()
+        self.ui.urlLabel.clear()
+        self.ui.pageTitleLineEdit.clear()
+        self.tagCBox.setDisabled(True)
+        self.ui.webView.load(QUrl())
+        QMessageBox.information(self, '', 'Удаление завершено', QMessageBox.Ok)
 
     @pyqtSlot()
     def full_text_search(self):
@@ -663,7 +676,6 @@ class Pocket(MainWindow):
         # todo:
         #   ОПЯТЬ ПЕРЕСМОТРЕТЬ МЕТОД
         #   ДОЛБАНЫЙ ИНДЕКС
-
         if not index.isValid():
             return
         index = index.model().index(index.row(), 1, QModelIndex())
